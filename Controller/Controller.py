@@ -11,3 +11,7 @@ class Controller:
     def update_view(self):
         data = self.model.get_data()
         self.view.update_view(data)
+
+    #set view
+    def set_view(self, view):
+        self.view = view
