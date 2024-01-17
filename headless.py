@@ -122,16 +122,16 @@ dispatcher.initPackages();
 dispatcher.print_all_truck_status();
 
 
-for i in range(1, 29):
+index = 0;
+while(dispatcher.is_dispatch_complete() == False):
+    print("\n\n\nStep ", index, "----------------------------------------\n");
+    dispatcher.dispatchStep();
+    dispatcher.print_all_truck_status();
+    dispatcher.print_num_delivered_packages();
+    index += 1;
 
-    if(dispatcher.is_dispatch_complete() == False):
-        print("\n\n\nStep ", i, "----------------------------------------\n");
-        dispatcher.dispatchStep();
-        dispatcher.print_all_truck_status();
-        dispatcher.print_num_delivered_packages();
-    
-    else:
-        print("Dispatch Complete!")
+if(dispatcher.is_dispatch_complete() == True):
+    print("Dispatch Complete!")
 
 
 

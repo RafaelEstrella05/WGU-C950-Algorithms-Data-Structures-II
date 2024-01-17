@@ -116,6 +116,8 @@ class Truck:
                     package.delayed_address = None
                     package.delayed_address_time = None
 
+                    self.dispatcher.current_time = datetime.combine(datetime.today(), package.delayed_address_time)
+
                     #update package distance matrix index
                     for index, location in self.dispatcher.location_labels.items():
                         if location == package.get_address():
