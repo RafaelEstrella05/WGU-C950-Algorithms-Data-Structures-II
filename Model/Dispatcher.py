@@ -1,82 +1,224 @@
-'''
-This file is the main file for the dispatcher. It will be the object that is invoked by the main program so that 
-it can dispatch the trucks and track the time. The dispatcher will be in charge of creating efficient routes for the 
-trucks to take. It will also be in charge of updating routes and times as the trucks deliver packages.
 
-Attributes:
-- trucks: A structure of available trucks that have to be assigned to drivers
-- drivers: A structure of available drivers that will be assigned to trucks
-- packages: A structure of packages that will be delivered
-    - packages are loaded from the packages.xlxs file and are stored in a graph based on the distances.xlsx file
-- time: The current time of the dispatcher
-- 
 '''
+The dispatcher is responsible for controlling the steps trucks take to deliver packages.
+Each step involves a truck moving from one unvisited location to another.  
+
+The dispatcher is also responsible for keeping track of the time of day, and updating the delivery status of packages.
+'''
+
+from Model.Truck import Truck  # Import the Truck module correctly
 
 # Constructor
 class Dispatcher:
 
-    #graph of distances between locations
-    distance_graph = {}
+    queued_packages = [] #list of packages to be delivered
+    delivered_packages = [] #list of packages that have been delivered
 
-    #attributes
-    trucks = [] #list of trucks that are available
-    drivers = [] #list of available drivers
-    packages = [] #list of packages that need to be delivered (order them by deadline where EOD is last)
-    assigned_trucks = [] #List of trucks that have been assigned to drivers and about to leave or have left
-    step_count = 0 #current time of dispatcher in its own unit of time. is used to simulate 24 hour clock
+    #location labels
+    location_labels = {}
 
-    def assign_driver_to_truck(self, driver, truck):
-        truck.driver = driver
-        self.assigned_trucks.append(truck)
+    #distance matrix (Complete Graph)
+    distance_matrix = [];
 
-    #update_time
-    def update_time(self, time):
-        self.time = time
+    #drivers that are available
+    drivers = {}
 
-    #load distance graph node 
-    def load_graph_node(self, location, destination, distance):
-        if location not in self.distance_graph:
-            self.distance_graph[location] = {}
-        self.distance_graph[location][destination] = distance;
+    #trucks that are available
+    trucks = {}
 
-    # load package into dispatcher
+    current_time = None
+    
+    #load distance data
+    def load_distance_data(self, location_labels, distance_matrix):
+        self.location_labels = location_labels
+        self.distance_matrix = distance_matrix
+
+    
+    #load truck data
     def load_package(self, package):
-        if package.details["delivery_deadline"] == "EOD":
-            self.packages.append(package)
+
+        #if the length of queued packages is 0, just add the package
+        if len(self.queued_packages) == 0:
+            self.queued_packages.append(package)
+            return
+
+        # Find the index to insert the new package
+        index = 0
+        while index < len(self.queued_packages) and self.queued_packages[index].details["package_id"] < package.details["package_id"]:
+            index += 1
+
+        # Insert the new package at the correct index
+        self.queued_packages.insert(index, package)
+
+    #finds package by id
+    def find_queued_package(self, package_id):
+        # Binary search to find the package
+        left = 0
+        right = len(self.queued_packages) - 1
+
+        while left <= right:
+            mid = (left + right) // 2
+            if int(self.queued_packages[mid].details["package_id"]) == int(package_id):
+                package = self.queued_packages[mid]
+                break
+            elif int(self.queued_packages[mid].details["package_id"]) < int(package_id):
+                left = mid + 1
+            else:
+                right = mid - 1
         else:
-            inserted = False
-            for i in range(len(self.packages)):
-                if package.is_deadline_before(self.packages[i]):
-                    self.packages.insert(i, package)
-                    inserted = True
-                    break
-            if not inserted:
-                self.packages.append(package)
+            package = None
+
+        return package
+
+
+    def initDrivers(self):
+        #hardcoded list of drivers
+        self.drivers = {
+            1: {
+                "name": "Driver 1",
+                "truck": None
+            },
+            2: {
+                "name": "Driver 2",
+                "truck": None
+            }
+        }
+        
+    def initTrucks(self):
+        #hardcoded list of trucks
+        self.trucks = {
+            1: Truck(1, self),
+            2: Truck(2, self),
+            3: Truck(3, self)
+        }
+        
+    def initTruckDrivers(self):
+        #for every driver, assign a truck
+        for driver_id in self.drivers:
+            driver = self.drivers[driver_id]
+            truck = self.trucks[driver_id] #not the best way to do this, but it works
+            driver["truck"] = truck
+            truck.driver = driver_id;
+    
+        print();
+            
+    
+    #hardcoded function
+    def initPackages(self):  # Add missing self parameter
+
+        print("Assigning packages to trucks...")
+
+        # hardcoded list of package ids to be delivered by each truck with a driver
+        truck1_package_ids = [29, 1, 40, 27, 35, 7, 4, 10]
+        truck2_package_ids = [15, 13, 30, 20, 37, 14, 16, 34, 18, 19, 39, 36, 3, 8, 9, 38]
+        truck3_package_ids = [6, 31, 25, 21, 2, 33, 11, 28, 17, 31, 12, 5, 24, 23, 26, 22];
+
+        trucks_list = [truck1_package_ids, truck2_package_ids, truck3_package_ids]
+
+        for i in range(0, len(trucks_list)):
+            truck = self.trucks[i + 1]  # Add missing self parameter
+            for j in range(0, len(trucks_list[i])):
+                package = self.find_queued_package(trucks_list[i][j]) 
+
+                if package is not None:
+
+                    print("Assigning package ", package.get_id(), " to truck ", truck.get_id());
+                    self.assign_package_to_truck(package.get_id(), truck)
+                    self.queued_packages.remove(package)
+                    print();
+
+
+
+
+    #assign package to truck with id
+    def assign_package_to_truck(self, package_id, truck):
+        package = self.find_queued_package(package_id)  # Add missing self parameter
+
+        #find matrix index of package address
+        package_address_combined = package.details["address"] + " (" + package.details["zip_code"] + ")"
+        
+
+        #find distance matrix index of package address for easy lookup
+        package_address_index = -1
+        #look through each location label, if the value is equal to the package_address_combined, then we have found the index
+        for location_index in self.location_labels:
+            if self.location_labels[location_index] == package_address_combined:
+                package_address_index = location_index
+                break
+
+        if(package_address_index == -1):
+            print("ERROR: Package address index not found.")
+            return
+
+        print("Package address: ", (package_address_combined) + ", Matrix Index: ", package_address_index);
+
+        if package_address_index != -1:
+            package.dist_matrix_index = package_address_index
+            truck.assign_package(package)
+            #package.set_truck(truck)
+            package.set_delivery_status("Loaded on Truck")
+
+
+    '''
+    In a dispatch step, the dispatcher, will first identify which trucks have a driver assigned to them, as they are 
+    the only trucks that can move. Then, the dispatcher will identify which trucks have packages assigned to them that do 
+    not have a delayed address. (truck.delayed_address and truck.delayed_address_time). if a truck has a delayed address,
+    then wait until the delayed address time is reached before possibly moving the truck towards the next location. 
+    The next location will always be the shorest distance from the current location.
+
+    Repeat until trucklist is empty:
+    Find the closest package on the truck by looking at each package’s address, finding the distance between the address and the current location. Keep track of the smallest distance and the package at that smallest distance.
+    “Deliver” the closest package by calculating how many minutes it takes the truck to travel to that location and add it to a running time variable. Once you’ve “moved” the truck, timestamp the package with that time variable. You can use the Python datetime module for that.
+    Pop the package id off the truck list
+    
+    '''
+    def dispatchStep(self):
+        
+        #for every driver that has a truck assigned, move the truck one step.
+        for driver_id in self.drivers:
+            driver = self.drivers[driver_id]
+            truck = driver["truck"]
+            
+            if truck is not None:
+                truck.truck_step()
+
+
+    def is_dispatch_complete(self):
+        #if there are no more packages to be delivered, then the dispatch is complete
+        #search through each truck to make sure no packages are left
+        for truck_id in self.trucks:
+            truck = self.trucks[truck_id]
+            if len(truck.queued_packages) > 0:
+                return False
+
+
+
+    def print_all_truck_status(self):
+        print();
+        print("ALL TRUCK PACKAGES: ")
+        for truck_id in self.trucks:
+            truck = self.trucks[truck_id]
+            truck.print_truck_status();
+            print(f"TRUCK {truck_id} HAS {len(truck.queued_packages)} PACKAGES REMAINING:")
+            print()
     
 
-    #print distance graph
-    def print_distance_graph(self):
-        for location in self.distance_graph:
-            for destination in self.distance_graph[location]:
-                print(f"{location} -> {destination}: {self.distance_graph[location][destination]}")
+    def print_all_truck_delivered_packages(self):
+        print();
+        print("ALL TRUCK DELIVERED PACKAGES: ")
 
-
-    #print information about dispatcher
-    def print_info(self):
-        print("Trucks:")
-        for truck in self.trucks:
-            print(truck)
-
-        print("Drivers:")
-        for driver in self.drivers:
-            print(driver)
-
-        print("Packages:")
-        for package in self.packages:
-            package.print_delayed_arrival_time();
+        if len(self.delivered_packages) == 0:
+            print("No packages have been delivered")
+            return
+        for package in self.delivered_packages:
             print(package)
+
+    def print_num_delivered_packages(self):
+        print();
+        print("NUMBER OF DELIVERED PACKAGES: ", len(self.delivered_packages))
+
+
 
  
 
 
-    

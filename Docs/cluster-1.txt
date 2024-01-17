@@ -1,0 +1,28 @@
+Location : Cluster
+4001 South 700 East, Salt Lake City, UT 84107 : 0 - HOME
+1060 Dalton Ave S (84104) : 1 
+1330 2100 S (84106) : 1 --
+1488 4800 S (84123) : 0
+177 W Price Ave (84115) : 0
+195 W Oakland Ave (84115) : 0
+2010 W 500 S (84104) : 1
+2300 Parkway Blvd (84119) : 0
+233 Canyon Rd (84103) : 1 
+2530 S 500 E (84106) : 0
+2600 Taylorsville Blvd (84118) : 0
+2835 Main St (84115) : 0 --
+300 State St (84103) : 1 
+3060 Lester St (84119) : 0 
+3148 S 1100 W (84119) : 0
+3365 S 900 W (84119) : 0 --
+3575 W Valley Central Station bus Loop (84119) : 0 --
+3595 Main St (84115) : 0 
+380 W 2880 S (84115) : 0
+410 S State St (84111) : 1
+4300 S 1300 E (84117) : 0
+4580 S 2300 E (84117) : 0
+5025 State St (84107) : 0
+5100 South 2700 West (84118) : 0 --
+5383 S 900 East #104 (84117) : 0
+600 E 900 South (84105) : 1
+6351 South 900 East (84121) : 0

@@ -14,13 +14,51 @@ class Package:
             "assigned_truck_id": None,  # Truck object
         }
 
+        #convert package_id to int
+        self.details["package_id"] = int(self.details["package_id"])
+
+        self.dist_matrix_index = None #index of the location in the distance matrix (used for calculating distance traveled)
+
+
         self.delayed_arrival_time = None #time that package will arrive at destination if delayed
+
+        self.delayed_address_time = None
+        self.delayed_address = None
+
+        self.delivered_time = None #time that package was delivered
 
         #if special note is "Delayed on flight---will not arrive to depot until XX:XX PM"
         if special_notes is not None:
-            if "delayed" in special_notes.lower():
+            if "Delayed on flight" in special_notes.lower():
                 time = special_notes.split("until ")[1]
                 self.delayed_arrival_time = datetime.strptime(time, "%I:%M %p").time()
+
+            #if special note is "Wrong address listed" find the correct address example: "Wrong address listed: new address known at 10:20 a.m (410 S. State St., Salt Lake City, UT 84111)"
+            if "wrong address" in special_notes.lower():
+                #time
+                time = special_notes.split("known at ")[1].split(" ")[0]
+                time = datetime.strptime(time, "%I:%M").time()
+                self.delayed_address_time = time
+
+                #address
+                address = special_notes.split("(")[1].split(")")[0]
+                self.delayed_address = address
+
+    def get_id(self):
+        return self.details["package_id"]
+    
+    def get_address(self):
+        return self.details["address"]
+    
+    def set_address(self, address):
+        self.details["address"] = address
+
+    def set_delivery_status(self, status):
+        self.details["delivery_status"] = status
+
+    def set_delivery_time(self, datetime):
+        self.delivered_time = datetime
+        
 
     def update_delivery_status(self, status):
         self.details["delivery_status"] = status
@@ -36,6 +74,9 @@ class Package:
         self.details["city"] = city
         self.details["state"] = state
         self.details["zip_code"] = zip_code
+    
+    def get_id(self):
+        return self.details["package_id"]
 
     #method to find if one deadline is before another.
     def is_deadline_before(self, other_package):
@@ -71,7 +112,7 @@ class Package:
         
         
 
-
+'''
 #Test Script
         
 #Create test packages
@@ -102,3 +143,5 @@ for package in test_packages:
 for package in sorted_packages:
     print(package)
 
+
+'''
