@@ -99,8 +99,6 @@ class Dispatcher:
             truck = self.trucks[driver_id] #not the best way to do this, but it works
             driver["truck"] = truck
             truck.driver = driver_id;
-    
-        print();
             
     
     #hardcoded function
@@ -111,7 +109,7 @@ class Dispatcher:
         # hardcoded list of package ids to be delivered by each truck with a driver
         truck1_package_ids = [29, 1, 40, 27, 35, 7, 4, 10]
         truck2_package_ids = [15, 13, 30, 20, 37, 14, 16, 34, 18, 19, 39, 36, 3, 8, 9, 38]
-        truck3_package_ids = [6, 31, 25, 21, 2, 33, 11, 28, 17, 31, 12, 5, 24, 23, 26, 22];
+        truck3_package_ids = [6, 32, 25, 21, 2, 33, 11, 28, 17, 31, 12, 5, 24, 23, 26, 22];
 
         trucks_list = [truck1_package_ids, truck2_package_ids, truck3_package_ids]
 
@@ -120,8 +118,9 @@ class Dispatcher:
             for j in range(0, len(trucks_list[i])):
                 package = self.find_queued_package(trucks_list[i][j]) 
 
-                if package is not None:
 
+
+                if package is not None:
                     print("Assigning package ", package.get_id(), " to truck ", truck.get_id());
                     self.assign_package_to_truck(package.get_id(), truck)
                     self.queued_packages.remove(package)
@@ -132,6 +131,9 @@ class Dispatcher:
 
     #assign package to truck with id
     def assign_package_to_truck(self, package_id, truck):
+
+            
+
         package = self.find_queued_package(package_id)  # Add missing self parameter
 
         #find matrix index of package address
@@ -160,17 +162,7 @@ class Dispatcher:
 
 
     '''
-    In a dispatch step, the dispatcher, will first identify which trucks have a driver assigned to them, as they are 
-    the only trucks that can move. Then, the dispatcher will identify which trucks have packages assigned to them that do 
-    not have a delayed address. (truck.delayed_address and truck.delayed_address_time). if a truck has a delayed address,
-    then wait until the delayed address time is reached before possibly moving the truck towards the next location. 
-    The next location will always be the shorest distance from the current location.
-
-    Repeat until trucklist is empty:
-    Find the closest package on the truck by looking at each package’s address, finding the distance between the address and the current location. Keep track of the smallest distance and the package at that smallest distance.
-    “Deliver” the closest package by calculating how many minutes it takes the truck to travel to that location and add it to a running time variable. Once you’ve “moved” the truck, timestamp the package with that time variable. You can use the Python datetime module for that.
-    Pop the package id off the truck list
-    
+    For every truck taken by a driver, move the truck one step.
     '''
     def dispatchStep(self):
         
@@ -190,17 +182,23 @@ class Dispatcher:
             truck = self.trucks[truck_id]
             if len(truck.queued_packages) > 0:
                 return False
+            
+        return True
 
 
 
     def print_all_truck_status(self):
         print();
-        print("ALL TRUCK PACKAGES: ")
+        print("STATUS FOR TRUCKS: ")
         for truck_id in self.trucks:
             truck = self.trucks[truck_id]
             truck.print_truck_status();
-            print(f"TRUCK {truck_id} HAS {len(truck.queued_packages)} PACKAGES REMAINING:")
-            print()
+            print(f"TRUCK {truck_id} HAS {len(truck.queued_packages)} PACKAGES REMAINING:", end=" [")
+            #beside the packages remaining, print the package id of each package remaining
+            for package in truck.queued_packages:
+                print(package.get_id(), end=", ")
+            print("]")
+            print();
     
 
     def print_all_truck_delivered_packages(self):
@@ -215,7 +213,12 @@ class Dispatcher:
 
     def print_num_delivered_packages(self):
         print();
-        print("NUMBER OF DELIVERED PACKAGES: ", len(self.delivered_packages))
+        print("NUMBER OF DELIVERED PACKAGES: ", len(self.delivered_packages), end=" [")
+        
+        for package in self.delivered_packages:
+            print(package.get_id(), end=", ")
+        print("]")
+        print();
 
 
 

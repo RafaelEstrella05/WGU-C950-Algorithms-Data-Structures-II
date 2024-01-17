@@ -6,7 +6,6 @@ from Model.Package import Package
 from Model.Dispatcher import Dispatcher
 from Model.Truck import Truck
 
-
 def load_package_data(dispatcher):
     # Open the CSV file
     with open('./Data/packages.csv', 'r') as csvfile:
@@ -112,18 +111,26 @@ print("Starting Script...");
 #create dispatcher object
 dispatcher = Dispatcher()
 
+#load distance matrix and package data
 load_distance_matrix(dispatcher);
 load_package_data(dispatcher);
+
+#initialize drivers, trucks, truck drivers, and packages
 dispatcher.initDrivers();
 dispatcher.initTrucks();
 dispatcher.initTruckDrivers();
 dispatcher.initPackages();
 
-dispatcher.print_all_truck_status();
-
 
 index = 0;
+
+print("Starting Dispatch ---------------------------------------- \n\n\n");
+dispatcher.print_all_truck_status();
+dispatcher.print_num_delivered_packages();
+
+#while dispatch is not complete, dispatch a step
 while(dispatcher.is_dispatch_complete() == False):
+
     print("\n\n\nStep ", index, "----------------------------------------\n");
     dispatcher.dispatchStep();
     dispatcher.print_all_truck_status();
@@ -131,21 +138,8 @@ while(dispatcher.is_dispatch_complete() == False):
     index += 1;
 
 if(dispatcher.is_dispatch_complete() == True):
-    print("Dispatch Complete!")
+    print("\nDispatch Complete!")
 
-
-
-
-
-
-
-
-
-
-
-print("done...")
-
-#dispatcher.
 
 
 
