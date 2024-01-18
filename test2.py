@@ -109,7 +109,7 @@ hash_table = HashTable()
 
 #for every package in each truck, insert the package into the hash table
 for truck in dispatcher.trucks:
-    for package in truck.packages:
+    for package in dispatcher.trucks[truck].queued_packages:
         hash_table.insert(package)
 
 #search for package 9
@@ -125,4 +125,15 @@ hash_table.remove(package)
 package = hash_table.search(9)
 
 #print package data
+print(package)
+
+#search for package 14
+package = hash_table.search(14)
+
+#print package data
+print(package)
+
+
+
+
 
