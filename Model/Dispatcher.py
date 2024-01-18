@@ -198,6 +198,12 @@ class Dispatcher:
             for package in truck.queued_packages:
                 print(package.get_id(), end=", ")
             print("]")
+            #print delayed address packages
+            print("Delayed Address Packages: ", end=" [")
+            for package in truck.delayed_address_packages:
+                print(package.get_id(), " is delayed due to wrong address", end=", ")
+
+            print("]")
             print();
     
 

@@ -131,7 +131,9 @@ dispatcher.print_num_delivered_packages();
 #while dispatch is not complete, dispatch a step
 while(dispatcher.is_dispatch_complete() == False):
 
+
     print("\n\n\nStep ", index, "----------------------------------------\n");
+    
     dispatcher.dispatchStep();
     dispatcher.print_all_truck_status();
     dispatcher.print_num_delivered_packages();

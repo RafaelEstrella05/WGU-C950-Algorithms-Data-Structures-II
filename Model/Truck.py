@@ -49,49 +49,60 @@ class Truck:
     def truck_step(self):
         print("Truck #" + str(self.truck_id) + " Step")
 
-        if(self.truck_id == 1): #for debugging
-            print();
+        
+        #loop through delayed address packages and check if any of them have a delayed address time that is less than the current time
+        #this is to check if any of the packages have a delayed address that is ready to be delivered
+        for package in self.delayed_address_packages:
+
+            do_update = False
+            
+            if len(self.queued_packages) == 0:
+                do_update = True
+
+            if package.delayed_address_time is not None and (package.delayed_address_time <= self.dispatcher.current_time.time() or package.delayed_address_time <= self.time.time()):
+                do_update = True
+
+            #if the package has a delayed address time that is less than the current time, then it is ready to be delivered
+            if do_update:
+
+                #go back home first if not already, calculate time to travel and update truck time and current location
+                if self.current_location != self.loading_address:
+                    #print "moving truck from <Current Location> to the hub : <Distance> miles away"
+                    print("\nMoving truck from (" + str(self.current_location) + ") to the HUB : " + str(self.dispatcher.distance_matrix[self.current_loc_index][0]) + " miles away\n")
+                    distance = self.dispatcher.distance_matrix[self.current_loc_index][0]
+                    time_to_travel = distance / self.speed * 60
+                    self.time += timedelta(minutes=time_to_travel)
+                    self.current_location = self.loading_address
+                    self.current_loc_index = 0
+                    self.miles += distance
+                    self.dispatcher.current_time = self.time
+
+
+                #print "adding package <id> back to truck <id> queue with delayed address"
+                print("Adding package " + str(package.get_id()) + " back to truck " + str(self.truck_id) + " queue with delayed address\n")
+                
+
+                package.details["delivery_status"] = "In Transit"
+
+                #update the the package address to the delayed address
+                package.set_address(package.delayed_address)
+
+                #update the package's distance matrix index
+                for index, location in self.dispatcher.location_labels.items():
+                    if location == package.get_address():
+                        package.dist_matrix_index = index
+                        break
+
+                #add the package back to the queued packages
+                self.queued_packages.append(package)
+                #remove from delayed address packages
+                self.delayed_address_packages.remove(package)
+                
+                #return
+        
 
         if len(self.queued_packages) == 0: #if there are no more packagaes to deliver in the queue
             print("No packages to deliver for truck #" + str(self.truck_id) + "\n")
-
-            #loop through delayed address packages and check if any of them have a delayed address time that is less than the current time
-            for package in self.delayed_address_packages:
-                if package.delayed_address_time is not None and package.delayed_address_time <= self.dispatcher.current_time.time():
-
-                    #go back home first if not already, calculate time to travel and update truck time and current location
-                    if self.current_location != self.loading_address:
-                        #print "moving truck from <Current Location> to the hub : <Distance> miles away"
-                        print("\nMoving truck from (" + str(self.current_location) + ") to the HUB : " + str(self.dispatcher.distance_matrix[self.current_loc_index][0]) + " miles away\n")
-                        distance = self.dispatcher.distance_matrix[self.current_loc_index][0]
-                        time_to_travel = distance / self.speed * 60
-                        self.time += timedelta(minutes=time_to_travel)
-                        self.current_location = self.loading_address
-                        self.current_loc_index = 0
-                        self.miles += distance
-                        self.dispatcher.current_time = self.time
-
-
-                    #print "adding package <id> back to truck <id> queue with delayed address"
-                    print("Adding package " + str(package.get_id()) + " back to truck " + str(self.truck_id) + " queue with delayed address\n")
-                    
-
-                    package.details["delivery_status"] = "In Transit"
-
-                    #update the the package address to the delayed address
-                    package.set_address(package.delayed_address)
-
-                    #update the package's distance matrix index
-                    for index, location in self.dispatcher.location_labels.items():
-                        if location == package.get_address():
-                            package.dist_matrix_index = index
-                            break
-
-                    #add the package back to the queued packages
-                    self.queued_packages.append(package)
-                    #remove from delayed address packages
-                    self.delayed_address_packages.remove(package)
-                    return
 
 
             #go back home if not already, calculate time to travel and update truck time and current location
@@ -166,7 +177,7 @@ class Truck:
         #print "moving truck from <Current Location> to <Package Address> (<package ID>)) : <Distance> miles away"
         print("\nMoving truck from (" + str(self.current_location) + ") to (" + str(closest_package.get_address()) + ") (" + str(closest_package.get_id()) + ") : " + str(min_distance) + " miles away\n")
 
-
+        ###MOVE TRUCK TO CLOSEST PACKAGE
         #calculate time to travel to closest package so that we can update the truck time
         time_to_travel = min_distance / self.speed * 60 #calculate time to travel to closest package
         self.time += timedelta(minutes=time_to_travel) #update truck time
