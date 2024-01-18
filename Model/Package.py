@@ -12,7 +12,7 @@ class Package:
             "special_notes": special_notes,
             "delivery_status": "at hub",  # Initial status (at hub, en route, delivered)
             "assigned_truck_id": None,  # Truck object
-        }
+        } 
 
         #convert package_id to int
         self.details["package_id"] = int(self.details["package_id"])

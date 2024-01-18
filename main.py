@@ -1,19 +1,12 @@
-# main.py
-from Model.Model import Model
-from View.View import View
-from Controller.Controller import Controller
+import tkinter as tk
 
-def main():
+# Initialize the main window
+root = tk.Tk()
+root.title("Truck Status Dashboard")
 
-    '''
-        model = Model() # create Model
-        controller = Controller(model, None), # create Controller, pass reference to Model
-        view = View(controller) # create View
-        controller.set_view(view) # pass reference to View to Controller
-
-        view.mainloop()  # start application
-    '''
+#geometry should be full screen
+root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 
 
-if __name__ == "__main__":  
-    main()
+
+root.mainloop()
