@@ -66,9 +66,12 @@ class Truck:
 
             do_update = False
             
-            #if len(self.queued_packages) == 0:
+            
+            
             if len(self.queued_package_ids) == 0:
                 do_update = True
+            
+
 
             if package.delayed_address_time is not None and (package.delayed_address_time <= self.dispatcher.current_time.time() or package.delayed_address_time <= self.time.time()):
                 do_update = True

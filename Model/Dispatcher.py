@@ -33,9 +33,9 @@ class Dispatcher:
     #init
     def __init__(self):
         self.trucks = [
-        Truck(1, self, [29, 1, 40, 27, 35, 7, 4, 10], 0), #(truck_id, dispatcher, queued_package_ids, driver_index)
+        Truck(1, self, [29, 1, 40, 27, 35, 7, 4, 10, 5], 0), #(truck_id, dispatcher, queued_package_ids, driver_index)
         Truck(2, self, [15, 13, 30, 20, 37, 14, 16, 34, 18, 19, 39, 36, 3, 8, 9, 38], 1),
-        Truck(3, self, [6, 32, 25, 21, 2, 33, 11, 28, 17, 31, 12, 5, 24, 23, 26, 22], None)
+        Truck(3, self, [6, 32, 25, 21, 2, 33, 11, 28, 17, 31, 12, 24, 23, 26, 22], None)
         ]
 
         self.drivers = [
@@ -84,6 +84,8 @@ class Dispatcher:
         print();
         print("STATUS FOR TRUCKS: ")
         for truck in self.trucks:
+]
+
             truck.print_truck_status();
             print(f"TRUCK {truck.truck_id} HAS {len(truck.queued_package_ids)} PACKAGES REMAINING:", end=" [")
             #beside the packages remaining, print the package id of each package remaining
