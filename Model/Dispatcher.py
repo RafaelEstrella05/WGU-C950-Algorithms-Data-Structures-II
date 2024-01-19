@@ -84,7 +84,6 @@ class Dispatcher:
         print();
         print("STATUS FOR TRUCKS: ")
         for truck in self.trucks:
-]
 
             truck.print_truck_status();
             print(f"TRUCK {truck.truck_id} HAS {len(truck.queued_package_ids)} PACKAGES REMAINING:", end=" [")
