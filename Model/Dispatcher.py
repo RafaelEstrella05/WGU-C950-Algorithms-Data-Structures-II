@@ -3,7 +3,6 @@
 The dispatcher is responsible for controlling the steps trucks take to deliver packages.
 Each step involves a truck moving from one unvisited location to another.  
 
-The dispatcher is also responsible for keeping track of the time of day, and updating the delivery status of packages.
 '''
 #datetime
 from datetime import datetime, timedelta
@@ -30,7 +29,7 @@ class Dispatcher:
     #distance matrix (Complete Graph)
     distance_matrix = [];
 
-    #init
+    #init (hardcoded data)
     def __init__(self):
         self.trucks = [
         Truck(1, self, [29, 1, 40, 27, 35, 7, 4, 10, 5, 2, 33, 21, 31], 0), #(truck_id, dispatcher, queued_package_ids, driver_index)
@@ -39,8 +38,8 @@ class Dispatcher:
         ]
 
         self.drivers = [
-            Driver(1, "Driver 1", self.trucks[0]),
-            Driver(2, "Driver 2", self.trucks[1])
+            Driver(1, "Billy", self.trucks[0]),
+            Driver(2, "Bob", self.trucks[1])
         ]
 
     #load distance data

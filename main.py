@@ -127,12 +127,25 @@ def display_gui(dispatcher):
 
 
                         distance_from_current_location = dispatcher.distance_matrix[truck.current_loc_index][package.dist_matrix_index]
-    
+                        distance_from_current_location = round(distance_from_current_location, 1)
 
-                        listboxes[list_name].insert("end", f"ID: {package.get_id()} | at {package.address}{delivery_deadline} | {distance_from_current_location} miles away")
+                        delayed_reason = "| "
+
                         #color light orange if delayed
                         if list_name == 'Delayed':
+
+                            #if package is delayed because of wrong address, add to the list
+                            if package.delayed_address is not None:
+                                delayed_reason = " (wrong address)"
+                            else:
+                                delayed_reason = " (delayed: arriving to hub: " + package.delayed_arrival_time.strftime('%I:%M%p') + ")"
+                                
+
+                        listboxes[list_name].insert("end", f"ID: {package.get_id()} | at {package.address}{delivery_deadline} | {distance_from_current_location} miles away {delayed_reason}")
+
+                        if list_name == 'Delayed':
                             listboxes[list_name].itemconfig("end", {'bg':'#FFCC99'})
+                            
 
             # Scrollbar for the listbox
             scrollbar = ttk.Scrollbar(list_frames[list_name], orient="vertical", command=listboxes[list_name].yview)
