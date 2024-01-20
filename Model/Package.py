@@ -13,6 +13,9 @@ class Package:
         self.delivered_time = None #time that package was delivered
         self.status = "At Hub"
 
+        if self.package_id == 6:
+             print()
+
         self.dispatcher = dispatcher #dispatcher object (parent)
 
         self.set_matrix_index() #index of the location in the distance matrix (used for calculating distance traveled)
@@ -23,9 +26,11 @@ class Package:
 
         #if special note is "Delayed on flight---will not arrive to depot until XX:XX PM"
         if self.special_notes is not None:
-            if "Delayed on flight" in special_notes.lower():
+
+            if "delayed on flight" in special_notes.lower():
                 time = special_notes.split("until ")[1]
                 self.delayed_arrival_time = datetime.strptime(time, "%I:%M %p").time()
+                self.status = "Delayed"
 
             #if special note is "Wrong address listed" find the correct address example: "Wrong address listed: new address known at 10:20 a.m (410 S. State St., Salt Lake City, UT 84111)"
             if "wrong address" in special_notes.lower():
@@ -37,6 +42,7 @@ class Package:
                 #address with, state, and zip code
                 address = special_notes.split("\"")[1].split("\"")[0] #410 S. State St 84111
                 self.delayed_address = address
+
 
     def get_id(self):
         
@@ -77,7 +83,9 @@ class Package:
             
             return self.status
 
-    
+    def get_delivery_time(self):
+            
+            return self.delivered_time
 
     def set_delivery_time(self, datetime):
         self.delivered_time = datetime
@@ -112,6 +120,8 @@ class Package:
     
     def __str__(self):
         return f"Package ID: {self.package_id}, Address: {self.address}, Deadline: {self.delivery_deadline}, Status: {self.get_status()}, Special Notes: {self.special_notes}"
+    
+
         
         
 

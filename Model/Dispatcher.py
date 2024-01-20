@@ -33,9 +33,9 @@ class Dispatcher:
     #init
     def __init__(self):
         self.trucks = [
-        Truck(1, self, [29, 1, 40, 27, 35, 7, 4, 10, 5], 0), #(truck_id, dispatcher, queued_package_ids, driver_index)
+        Truck(1, self, [29, 1, 40, 27, 35, 7, 4, 10, 5, 2, 33, 21, 31], 0), #(truck_id, dispatcher, queued_package_ids, driver_index)
         Truck(2, self, [15, 13, 30, 20, 37, 14, 16, 34, 18, 19, 39, 36, 3, 8, 9, 38], 1),
-        Truck(3, self, [6, 32, 25, 21, 2, 33, 11, 28, 17, 31, 12, 24, 23, 26, 22], None)
+        Truck(3, self, [6, 32, 25, 11, 28, 17, 12, 24, 23, 26, 22], None)
         ]
 
         self.drivers = [
@@ -50,13 +50,11 @@ class Dispatcher:
         
     #For every truck taken by a driver, move the truck one step.
     def dispatchStep(self):
-        
-        #for every driver that has a truck assigned, move the truck one step.
-        for driver in self.drivers:
-            truck = driver.truck
-            
-            if truck is not None:
-                truck.truck_step()
+
+        #for every truck, move the truck one step.
+        for truck in self.trucks:
+            truck.truck_step()
+
 
     #check if all trucks are at the hub
     def is_dispatch_complete(self):

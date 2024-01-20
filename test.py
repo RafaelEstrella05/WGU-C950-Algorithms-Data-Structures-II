@@ -1,58 +1,90 @@
 import tkinter as tk
+from tkinter import ttk
+from Model.Dispatcher import Dispatcher
+from Model.Utils import load_distance_matrix, load_package_data
 
-# Initialize the main window
+# Create dispatcher object
+dispatcher = Dispatcher()
+load_distance_matrix(dispatcher)
+load_package_data(dispatcher)
+
+# Function calls the dispatcher to move to the next truck step
+def next_truck_step():
+    if not dispatcher.is_dispatch_complete():
+        dispatcher.dispatchStep()
+        display_gui(dispatcher)
+
+def display_gui(dispatcher):
+    # Clear the root window
+    for widget in root.winfo_children():
+        widget.destroy()
+
+    # Navigation bar frame (red)
+    nav_frame = tk.Frame(root, height=50)
+    nav_frame.pack(side="top", fill="x", expand=False)
+
+    # Button on the right side of the navigation bar
+    nav_button = tk.Button(nav_frame, text="Next Truck Step", command=next_truck_step)
+    nav_button.pack(side="right", padx=10)
+
+    # Create frames for each truck
+    for i, truck in enumerate(dispatcher.trucks):
+        truck_frame = tk.Frame(root, borderwidth=2, relief="groove")
+        truck_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+
+        # Status section (yellow)
+        status_frame = tk.Frame(truck_frame, background="yellow", height=100)
+        status_frame.pack(fill="x", expand=False)
+
+        driver_text = "None"
+        if truck.driver_index is not None:
+            driver_text = f"Driver {int(truck.driver_index) + 1}"
+        
+        # Truck information
+        truck_info = f"Truck {truck.truck_id}: {truck.miles} Total Miles \nDriver {driver_text} \nCurrent Loc: {dispatcher.location_labels[truck.current_loc_index]}"
+        status_label = tk.Label(status_frame, text=truck_info, bg="yellow", anchor="w", justify="left")
+        status_label.pack(side="left", fill="x", expand=True)
+
+
+
+        # Packages list sections
+        list_frames = {}  # Dictionary to store the frames for each package list
+        listboxes = {}  # Dictionary to store the listboxes
+        for list_name, package_ids in [('Queued', truck.queued_package_ids),
+                                       ('Delivered', truck.delivered_package_ids),
+                                       ('Delayed', truck.delayed_package_ids)]:
+            # Frame for the list
+            list_frames[list_name] = tk.Frame(truck_frame, background="#DDDDDD")
+            list_frames[list_name].pack(fill="both", expand=True) 
+            packages_label = tk.Label(list_frames[list_name], text=f"{list_name} Packages", bg="#DDDDDD")
+            packages_label.pack(side="top", fill="x")
+
+            # Listbox for the packages
+            listboxes[list_name] = tk.Listbox(list_frames[list_name])
+            listboxes[list_name].pack(side="left", fill="both", expand=True)
+
+            # Populate listbox with package information
+            for package_id in package_ids:
+                package = dispatcher.package_table.get(package_id)
+                if package:
+                    if list_name == 'Delivered':
+                        # Show delivery time for delivered packages
+                        delivery_time = package.get_delivery_time().strftime('%I:%M%p')
+                        listboxes[list_name].insert("end", f"ID: {package.get_id()} | at {package.address} | {delivery_time} ")
+                    else:
+                        listboxes[list_name].insert("end", f"ID: {package.get_id()}, Address: {package.address}")
+
+            # Scrollbar for the listbox
+            scrollbar = ttk.Scrollbar(list_frames[list_name], orient="vertical", command=listboxes[list_name].yview)
+            scrollbar.pack(side="right", fill="y")
+            listboxes[list_name].config(yscrollcommand=scrollbar.set)
+
+# Main application window
 root = tk.Tk()
-root.title("Truck Status Dashboard")
-root.geometry("900x300")
+root.title("Truck and Package Management")
 
-# Define data for the trucks (as an example, this could come from a database or other data source)
-trucks_data = [
-    {'id': 1, 'distance': '30 miles', 'last_address': '123 Main St', 'status': 'In Route', 'deliveries': [
-        ('35', 'Delivered'), ('4', 'In Route'), ('6', 'In Route'), ('10', 'In Route'), ('7', 'In Route'), ('27', 'In Route'),  ('1', 'In Route'), ('40', 'In Route'),
-        ('29', 'In Route'), ('15', 'In Route'), ('13', 'In Route'), ('30', 'In Route'), ('20', 'In Route'), ('37', 'In Route'), ('14', 'In Route'), ('16', 'In Route'),
-        ('34', 'In Route'), ('18', 'In Route'), ('19', 'In Route'), ('39', 'In Route'), ('36', 'In Route'), ('3', 'In Route'), ('8', 'In Route'), ('9', 'In Route'),
-        ('38', 'In Route')
-    ]},
-    {'id': 2, 'distance': '30 miles', 'last_address': '456 Oak St', 'status': 'Delayed', 'deliveries': [
-        ('35', 'Delivered'), ('4', 'In Route'), ('6', 'Delayed'), ('10', 'In Route'), ('7', 'In Route'), ('27', 'In Route'),  
-        ('1', 'In Route'), ('40', 'In Route'), ('29', 'In Route'), ('15', 'In Route'), ('13', 'In Route'), ('30', 'In Route'),
-        ('20', 'In Route'), ('37', 'In Route'), ('14', 'In Route'), ('16', 'In Route'), ('34', 'In Route'), ('18', 'In Route'),
-        ('19', 'In Route'), ('39', 'In Route'), ('36', 'In Route'), ('3', 'In Route'), ('8', 'In Route'), ('9', 'In Route'),
-        ('38', 'In Route')
-    ]},
-    {'id': 3, 'distance': '30 miles', 'last_address': '789 Pine St', 'status': 'At Hub', 'deliveries': [
-        ('35', 'At Hub'), ('4', 'At Hub'), ('6', 'At Hub'), ('10', 'At Hub'), ('7', 'At Hub'), ('27', 'At Hub'),  
-        ('1', 'At Hub'), ('40', 'At Hub'), ('29', 'At Hub'), ('15', 'At Hub'), ('13', 'At Hub'), ('30', 'At Hub'),
-        ('20', 'At Hub'), ('37', 'At Hub'), ('14', 'At Hub'), ('16', 'At Hub'), ('34', 'At Hub'), ('18', 'At Hub'),
-        ('19', 'At Hub'), ('39', 'At Hub'), ('36', 'At Hub'), ('3', 'At Hub'), ('8', 'At Hub'), ('9', 'At Hub'),
-        ('38', 'At Hub')
-    ]}
-]
+# Initial GUI setup
+display_gui(dispatcher)
 
-# Function to create a label dynamically
-def create_label(master, text, bg_color):
-    label = tk.Label(master, text=text, bg=bg_color)
-    label.pack(pady=2, fill='x')
-
-# Create truck frames and labels dynamically
-for truck in trucks_data:
-    # Create a frame for each truck
-    truck_frame = tk.Frame(root, bg='lightgrey', bd=2, relief='groove')
-    truck_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-    
-    # Create a title label for the truck
-    create_label(truck_frame, f"Truck #{truck['id']}", 'lightblue')
-    
-    # Create labels for distance, last address, and status
-    create_label(truck_frame, f"Total Distance: {truck['distance']}", 'lightgrey')
-    create_label(truck_frame, f"Last Address: {truck['last_address']}", 'lightgrey')
-    create_label(truck_frame, f"Status: {truck['status']}", 'lightgrey')
-    
-    # Create labels for each delivery item
-    for delivery in truck['deliveries']:
-        delivery_id, delivery_status = delivery
-        color = 'green' if delivery_status == 'Delivered' else 'red' if delivery_status == 'Delayed' else 'lightgrey'
-        create_label(truck_frame, f"#{delivery_id} {delivery_status}", color)
-
-# Start the main GUI loop
+# Run the application
 root.mainloop()
