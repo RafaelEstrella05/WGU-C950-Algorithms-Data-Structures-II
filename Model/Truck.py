@@ -15,7 +15,7 @@ class Truck:
         self.miles = 0 #miles traveled
         self.last_package_delivered = None #package object 
         self.driver_index = driver_index #driver index from dispatch driver list (indicates which driver is assigned to this truck)
-        
+        self.status = "At Hub" #status of the truck (At Hub, In Transit, etc.)
         self.dispatcher = dispatcher
 
         # set time to today's date at 8:00 AM
@@ -39,16 +39,31 @@ class Truck:
 
     #updates the status of the truck to be in the loading dock
     def go_back_to_hub(self):
+
+        
         #go back home first if not already, calculate time to travel and update truck time and current location
         if self.current_loc_index != self.dispatcher.loading_address_index:
             #print "moving truck from <Current Location> to the hub : <Distance> miles away"
             print("\nMoving truck from (" + str(self.dispatcher.location_labels[self.current_loc_index]) + ") to the HUB : " + str(self.dispatcher.distance_matrix[self.current_loc_index][0]) + " miles away\n")
             distance = self.dispatcher.distance_matrix[self.current_loc_index][0]
             time_to_travel = distance / self.speed * 60
+
+            #this is to prevent the truck from moving faster than the live time
+            theoretical_delivery_time = self.time + timedelta(minutes=(distance / self.speed * 60))
+            if theoretical_delivery_time >= self.dispatcher.live_time:
+                print("Truck #" + str(self.truck_id) + " is waiting for live time to catch up to theoretical delivery time\n")
+
+                #update truck status
+                self.status = "On the way to HUB"
+
+                return
+
             self.time += timedelta(minutes=time_to_travel)
             self.current_loc_index = 0
             self.miles += distance
             self.dispatcher.current_time = self.time
+            self.status = "At Hub"
+            
 
     #gets the next available truck that has packages to deliver (if any)
     def get_available_truck(self):
@@ -65,15 +80,11 @@ class Truck:
             package = self.dispatcher.package_table.get(id)
 
             do_update = False
-
-
-            #if len(self.queued_package_ids) == 0:
-             #   do_update = True
             
-            if package.delayed_address_time is not None and (package.delayed_address_time <= self.dispatcher.current_time.time() or package.delayed_address_time <= self.time.time()):
+            if package.delayed_address_time is not None and (package.delayed_address_time <= self.dispatcher.live_time.time()):
                 do_update = True
 
-            if package.delayed_arrival_time is not None and (package.delayed_arrival_time <= self.time.time()):
+            if package.delayed_arrival_time is not None and (package.delayed_arrival_time <= self.dispatcher.live_time.time()):
                 do_update = True
 
             #if the package has a delayed address time that is less than the current time, then it is ready to be delivered
@@ -96,6 +107,11 @@ class Truck:
                 self.queued_package_ids.append(package.get_id())
                 #remove from delayed address packages
                 self.delayed_package_ids.remove(package.get_id())
+
+                #report time to truck
+                self.time = self.dispatcher.current_time
+
+                
 
 
 
@@ -120,12 +136,16 @@ class Truck:
                 #remove from queued packages
                 self.queued_package_ids.remove(package_id)
 
-                
+    def update_truck_status(self):
+        pass
+        #if there is    
 
 
     #move truck one step
     def truck_step(self):
         print("Truck #" + str(self.truck_id) + " Step")
+
+        self.update_truck_status()
 
         self.de_queue_delayed_packages()
 
@@ -172,17 +192,10 @@ class Truck:
                     return
                     
                     #otherwise remove driver from truck
-                    self.dispatcher.drivers[self.driver_index].truck = None
-                    self.driver_index = None
+                    #self.dispatcher.drivers[self.driver_index].truck = None
+                    #self.driver_index = None
 
                 return
-
-
-                
-
-
-                
-            
 
             #find closest package
             min_distance = 9999; #init min distance to a high number
@@ -214,7 +227,18 @@ class Truck:
             #print "moving truck from <Current Location> to <Package Address> (<package ID>)) : <Distance> miles away"
             print("\nMoving truck from (" + str(self.dispatcher.location_labels[self.current_loc_index]) + ") to (" + str(closest_package.get_address()) + ") (" + str(closest_package.get_id()) + ") : " + str(min_distance) + " miles away\n")
 
-            #move truck to closest package
+            #move truck to closest package, only move if the live time is less than or equal to the package calculated delivery time
+            theoretical_delivery_time = self.time + timedelta(minutes=(min_distance / self.speed * 60))
+
+            #this is to prevent the truck from moving faster than the live time 
+            if theoretical_delivery_time >= self.dispatcher.live_time:
+                print("Truck #" + str(self.truck_id) + " is waiting for live time to catch up to theoretical delivery time\n")
+
+                #update truck status
+                self.status = "On the way to " + str(closest_package.get_address()) + " (" + str(closest_package.get_id()) + ")"
+
+                return
+
             time_to_travel = min_distance / self.speed * 60 #calculate time to travel to closest package
             self.time += timedelta(minutes=time_to_travel) #update truck time
             self.dispatcher.current_time = self.time
@@ -227,9 +251,8 @@ class Truck:
             closest_package.set_delivery_time(self.time) #update package delivery time
             self.queued_package_ids.remove(closest_package.get_id()) #pop closest package off the truck queue
 
-
-
-
+            #step again, if there are more packages to deliver
+            self.truck_step()
             
 
         

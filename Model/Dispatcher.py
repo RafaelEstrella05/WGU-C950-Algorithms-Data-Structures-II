@@ -17,6 +17,9 @@ class Dispatcher:
     loading_address = "4001 South 700 East,  Salt Lake City, UT 84107"
     loading_address_index = 0
 
+    #live_time is the current time of the dispatcher, starting at 8:00 AM
+    live_time = datetime.combine(datetime.today(), datetime.strptime("8:00 AM", "%I:%M %p").time())
+
     #current time is 8:00 AM datetime.time(8, 0, 0)
     current_time = datetime.combine(datetime.today(), datetime.strptime("8:00 AM", "%I:%M %p").time())
 
@@ -49,6 +52,9 @@ class Dispatcher:
         
     #For every truck taken by a driver, move the truck one step.
     def dispatchStep(self):
+
+        #add one minute to the live time
+        self.live_time = self.live_time + timedelta(minutes=1)
 
         #for every truck, move the truck one step.
         for truck in self.trucks:
