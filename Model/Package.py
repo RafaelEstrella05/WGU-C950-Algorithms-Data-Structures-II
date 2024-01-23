@@ -1,4 +1,5 @@
 from datetime import datetime
+
 class Package:
     def __init__(self, dispatcher, package_id, address, city, state, zip_code, delivery_deadline, weight_kilo, special_notes=None):
         
@@ -12,9 +13,6 @@ class Package:
         self.special_notes = special_notes
         self.delivered_time = None #time that package was delivered
         self.status = "At Hub"
-
-        if self.package_id == 6:
-             print()
 
         self.dispatcher = dispatcher #dispatcher object (parent)
 
@@ -40,8 +38,9 @@ class Package:
                 self.delayed_address_time = time
 
                 #address with, state, and zip code
-                address = special_notes.split("\"")[1].split("\"")[0] #410 S. State St 84111
+                address = special_notes.split("\"")[1].split("\"")[0] #example: 410 S. State St 84111
                 self.delayed_address = address
+                self.status = "Delayed"
 
 
     def get_id(self):

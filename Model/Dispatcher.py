@@ -4,7 +4,6 @@ The dispatcher is responsible for controlling the steps trucks take to deliver p
 Each step involves a truck moving from one unvisited location to another.  
 
 '''
-#datetime
 from datetime import datetime, timedelta
 
 from Model.Truck import Truck  
@@ -35,7 +34,7 @@ class Dispatcher:
     #init (hardcoded data)
     def __init__(self):
         self.trucks = [
-        Truck(1, self, [29, 1, 40, 27, 35, 7, 4, 10, 5, 2, 33, 21, 31], 0), #(truck_id, dispatcher, queued_package_ids, driver_index)
+        Truck(1, self, [29, 1, 40, 27, 35, 7, 4, 10, 5, 2, 33, 21, 31], 0), #Truck(truck_id, dispatcher, queued_package_ids, driver_index)
         Truck(2, self, [15, 13, 30, 20, 37, 14, 16, 34, 18, 19, 39, 36, 3, 8, 9, 38], 1),
         Truck(3, self, [6, 32, 25, 11, 28, 17, 12, 24, 23, 26, 22], None)
         ]

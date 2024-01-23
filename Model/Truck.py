@@ -1,7 +1,4 @@
-from datetime import datetime
 from datetime import timedelta
-from datetime import datetime
-#Truck class
 
 class Truck:
     speed = 18
@@ -17,10 +14,9 @@ class Truck:
         self.driver_index = driver_index #driver index from dispatch driver list (indicates which driver is assigned to this truck)
         self.status = "At Hub" #status of the truck (At Hub, In Transit, etc.)
         self.dispatcher = dispatcher
-
-        # set time to today's date at 8:00 AM
         self.time = self.dispatcher.current_time
         self.current_loc_index = 0 #for distance matrix
+
 
     def get_id(self):
         return self.truck_id
@@ -54,7 +50,7 @@ class Truck:
                 print("Truck #" + str(self.truck_id) + " is waiting for live time to catch up to theoretical delivery time\n")
 
                 #update truck status
-                self.status = "On the way to HUB"
+                self.status = f"On the way to HUB (ETA: {theoretical_delivery_time.strftime('%I:%M %p')})"
 
                 return
 
@@ -76,8 +72,12 @@ class Truck:
     #requeues delayed packages that are ready to be delivered
     def re_queue_delayed_packages(self):
         
-        for id in self.delayed_package_ids:
-            package = self.dispatcher.package_table.get(id)
+        #packages to requeue
+        packages_to_requeue = []
+
+        #for id in self.delayed_package_ids:
+        for i in range(len(self.delayed_package_ids)):
+            package = self.dispatcher.package_table.get(self.delayed_package_ids[i])
 
             do_update = False
             
@@ -94,10 +94,14 @@ class Truck:
                     #update status to At Hub
                     package.set_status("At Hub")
                 else:
-                    #print "adding package <id> back to truck <id> queue with delayed address"
-                    print("Adding package " + str(package.get_id()) + " back to truck " + str(self.truck_id) + " queue with delayed address\n")
-                    package.set_status("In Transit") #update package delivery status
-
+                    
+                    #if truck is at the hub, update status to At Hub
+                    if self.current_loc_index == 0:
+                        package.set_status("At Hub")
+                    else:
+                        print("Adding package " + str(package.get_id()) + " back to truck " + str(self.truck_id) + " queue with delayed address\n")
+                        package.set_status("In Transit") #update package delivery status    
+                
                 if package.delayed_address is not None:
                     #update the the package address to the delayed address
                     package.set_address(package.delayed_address)
@@ -105,53 +109,54 @@ class Truck:
 
                 #add the package id back to the queued package ids
                 self.queued_package_ids.append(package.get_id())
-                #remove from delayed address packages
-                self.delayed_package_ids.remove(package.get_id())
+                
+                #add the package to the packages to requeue so that it can be removed from the delayed packages
+                packages_to_requeue.append(package)
 
                 #report time to truck
                 self.time = self.dispatcher.current_time
 
-                
+        #remove packages from delayed packages
+        for package in packages_to_requeue:
+            self.delayed_package_ids.remove(package.get_id())
 
 
-
+    #dequeue delayed packages that are not ready to be delivered yet
     def de_queue_delayed_packages(self):
-        #find closest package
+        
+        #for every queued package, check if it has a delayed address or delayed arrival time
         for package_id in self.queued_package_ids:
             package = self.dispatcher.package_table.get(package_id)
 
-            #if package has a delayed address, and is not ready to be sent, set it a side and continue to next package
-            if package.delayed_address is not None and package.get_status() != "In Transit":
-                #add the package to delayed address packages
-                self.delayed_package_ids.append(package_id)
-                #remove from queued packages
-                self.queued_package_ids.remove(package_id)
+            if package.get_status() == "Delayed":
+                #if package has a delayed address, and is not ready to be sent, set it a side and continue to next package
+                if package.delayed_address is not None: #and package.get_status() != "In Transit":
+                    #add the package to delayed address packages
+                    self.delayed_package_ids.append(package_id)
+                    
+
+                #if package has delayed_arrival_time, and is ready to be sent, update the package address and matrix index
+                if package.delayed_arrival_time is not None: #and package.get_status() != "At Hub":
                 
+                    #add the package to delayed address packages
+                    self.delayed_package_ids.append(package_id)
 
-            #if package has delayed_arrival_time, and is ready to be sent, update the package address and matrix index
-            if package.delayed_arrival_time is not None and package.get_status() != "At Hub":
-            
-                #add the package to delayed address packages
-                self.delayed_package_ids.append(package_id)
-                #remove from queued packages
+        
+        #for every delayed package, remove from queued packages
+        for package_id in self.delayed_package_ids:
+            if package_id in self.queued_package_ids:
                 self.queued_package_ids.remove(package_id)
-
-    def update_truck_status(self):
-        pass
-        #if there is    
+ 
 
 
-    #move truck one step
+    #deliver packages
     def truck_step(self):
-        print("Truck #" + str(self.truck_id) + " Step")
-
-        self.update_truck_status()
+        print("Truck #" + str(self.truck_id) + " Step------------------------------------\n")
 
         self.de_queue_delayed_packages()
 
         #requeue delayed packages that are ready to be delivered
         self.re_queue_delayed_packages()
-        
 
         #if truck has driver 
         if self.driver_index is not None:
@@ -160,21 +165,22 @@ class Truck:
             if len(self.queued_package_ids) == 0: 
                 print("No packages to deliver for truck #" + str(self.truck_id) + "\n")
                 
-
                 available_truck = self.get_available_truck()
 
                 #if not at hub, go back home
                 if self.current_loc_index != 0:
                     self.go_back_to_hub(); #temp comment: not used by truck 2
+                    
                     if available_truck != None:
                         #update the time on the available truck to the current time of this truck
                         available_truck.time = self.time
-                    self.re_queue_delayed_packages()
+                    
                     return
                 
                 
                 if available_truck is not None:
-                    print("Truck #" + str(available_truck.get_id()) + " is ready for transit, assigning driver: " + str(self.driver_index + 1))
+                    #print("Truck #" + str(available_truck.get_id()) + " is ready for transit, assigning driver: " + str(self.driver_index + 1))
+                    print(f"Assigning Driver: {self.driver_index + 1} to Truck #{available_truck.get_id()}\n")
 
                     #assign new truck to driver
                     self.dispatcher.drivers[self.driver_index].truck = available_truck
@@ -190,10 +196,6 @@ class Truck:
                     available_truck.dispatcher.current_time = self.time
                     
                     return
-                    
-                    #otherwise remove driver from truck
-                    #self.dispatcher.drivers[self.driver_index].truck = None
-                    #self.driver_index = None
 
                 return
 
@@ -205,12 +207,6 @@ class Truck:
             for package_id in self.queued_package_ids:
                 package = self.dispatcher.package_table.get(package_id)
 
-                if package.delayed_address is not None and package.get_status() != "In Transit":
-                    continue
-
-                if package.delayed_arrival_time is not None and package.get_status() != "At Hub":
-                    continue
-
                 #calculate distance from current location to package address
                 distance = self.dispatcher.distance_matrix[self.current_loc_index][package.dist_matrix_index]
 
@@ -220,24 +216,22 @@ class Truck:
                     min_distance = self.dispatcher.distance_matrix[self.current_loc_index][package.dist_matrix_index]
                     closest_package = package
 
-            if closest_package is None:
-                print("No packages to deliver for truck #" + str(self.truck_id) + "\n")
-                return
-
-            #print "moving truck from <Current Location> to <Package Address> (<package ID>)) : <Distance> miles away"
-            print("\nMoving truck from (" + str(self.dispatcher.location_labels[self.current_loc_index]) + ") to (" + str(closest_package.get_address()) + ") (" + str(closest_package.get_id()) + ") : " + str(min_distance) + " miles away\n")
-
             #move truck to closest package, only move if the live time is less than or equal to the package calculated delivery time
             theoretical_delivery_time = self.time + timedelta(minutes=(min_distance / self.speed * 60))
 
             #this is to prevent the truck from moving faster than the live time 
             if theoretical_delivery_time >= self.dispatcher.live_time:
-                print("Truck #" + str(self.truck_id) + " is waiting for live time to catch up to theoretical delivery time\n")
 
                 #update truck status
-                self.status = "On the way to " + str(closest_package.get_address()) + " (" + str(closest_package.get_id()) + ")"
+                eta = theoretical_delivery_time.strftime("%I:%M %p")
+                self.status = f"On the way to " + str(closest_package.get_address()) + " (ETA: " + eta + ") "
+
+                print("Truck #" + str(self.truck_id) + " is " + self.status + "\n")
 
                 return
+            
+
+            print(f"Moving to Next Location: {closest_package.get_address()} (Package ID: {closest_package.get_id()}) : {min_distance} miles away\n")
 
             time_to_travel = min_distance / self.speed * 60 #calculate time to travel to closest package
             self.time += timedelta(minutes=time_to_travel) #update truck time
@@ -251,7 +245,7 @@ class Truck:
             closest_package.set_delivery_time(self.time) #update package delivery time
             self.queued_package_ids.remove(closest_package.get_id()) #pop closest package off the truck queue
 
-            #step again, if there are more packages to deliver
+            #step again, if there are more packages to deliver at the same time
             self.truck_step()
             
 

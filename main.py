@@ -1,3 +1,6 @@
+# Student ID: 009970725
+# Author: Rafael Estrella
+
 import tkinter as tk
 from tkinter import ttk
 from Model.Dispatcher import Dispatcher
@@ -6,54 +9,45 @@ from datetime import datetime
 
 global status_labels
 
-step_speed_index = 0 
-step_speeds = [2000, 1000, 500]
+pause = True
+step_speed_index = 0
+step_speeds = [2000, 1000, 500, 100]
 
-# Create dispatcher object
+# Create dispatcher object for managing trucks and packages
 dispatcher = Dispatcher()
+
+# Load the distance matrix and package data into the dispatcher
 load_distance_matrix(dispatcher)
 load_package_data(dispatcher)
 
-pause = False
+#for every truck in the dispatcher, truck.de_queue_delayed_packages();
+for truck in dispatcher.trucks:
+    truck.de_queue_delayed_packages()
 
-# Function calls the dispatcher to move to the next truck step
-def start_dispatch():
-    global nav_button
-
-    #enable pause button
-    pause_button.config(state="normal")
-
-    step_button.config(state="disabled")
-
-    #create a timer to update the gui every second
-    root.after(step_speeds[step_speed_index], dispatch_step)
-
-    #block button from being pressed again
-    nav_button.config(state="disabled")
-
-def pause_dispatch():
-    global pause_button
+#handles simulation start and pause
+def action_play():
+    global action_button
     global pause
 
     if pause:
         pause = False
-        pause_button.config(text="Pause")
+        action_button.config(text="Pause")
 
         #disable step button
         step_button.config(state="disabled")
 
-        #step 
         dispatch_step()
     else:
         pause = True
-        pause_button.config(text="Resume")
+        action_button.config(text="Resume")
 
         #enable step button
         step_button.config(state="normal")
 
 
+#carousels through speeds in the simulation
 def change_speed():
-    #want to carousel through the speeds
+    
     global step_speed_index
     global step_speeds
     global speed_button
@@ -65,17 +59,15 @@ def change_speed():
     speed_button.config(text=f"Speed: {step_speed_index + 1}")
     
 
-
+#step through the dispatching one step at a time.
 def manual_dispatch_step():
 
-    #step 
     if not dispatcher.is_dispatch_complete():
         dispatcher.dispatchStep()
-        #init_gui(dispatcher)
         update_gui()
     else:
-        nav_button.config(text="Dispatch Complete")
-
+        action_button.config(text="Dispatch Complete")
+        action_button.config(state="disabled")
 
 def dispatch_step():
 
@@ -89,55 +81,43 @@ def dispatch_step():
         
         root.after(step_speeds[step_speed_index], dispatch_step)
     else:
-        nav_button.config(text="Dispatch Complete")
+        action_button.config(text="Dispatch Complete")
+        action_button.config(state="disabled")
 
+#initialize the gui and global gui components that will be used to update the gui
 def init_gui(dispatcher):
-    global status_labels
+    global status_labels, live_time_label, list_box_list, action_button, packages_label_list, step_button, speed_button, list_names, frames, listboxes
     status_labels = []
-    global live_time_label
-    global list_box_list
     list_box_list = [] #array of listboxes, one for each truck and each list
-    global nav_button
-    global pause_button
-    global packages_label_list
     packages_label_list = []
-    global step_button
-    global speed_button
 
     # Clear the root window
     for widget in root.winfo_children():
         widget.destroy()
 
-    # Navigation bar frame (red)
+    # Navigation bar frame at the top of the window
     nav_frame = tk.Frame(root, height=50)
     nav_frame.pack(side="top", fill="x", expand=False)
 
-    #speed button
+    #speed button on the right side of the navigation bar
     speed_button = tk.Button(nav_frame, text=f"Speed: {step_speed_index + 1}", command=change_speed)
     speed_button.pack(side="right", padx=10, pady=10, ipadx=10, ipady=10)
-
-    # Button on the right side of the navigation bar
-    nav_button = tk.Button(nav_frame, text="Start", command=start_dispatch)
-    nav_button.pack(side="right", padx=10, pady=10, ipadx=10, ipady=10)
-    #if the dispatch is complete, disable the button
-    if dispatcher.is_dispatch_complete():
-        nav_button.config(state="disabled")
-        #change text to complete
-        nav_button.config(text="Dispatch Complete")
+    
+    #action button toggles between pause and resume
+    action_button = tk.Button(nav_frame, text="Run", command=action_play)
+    action_button.pack(side="right", padx=10, pady=10, ipadx=10, ipady=10)
 
     step_button = tk.Button(nav_frame, text="Step", command=manual_dispatch_step)
     step_button.pack(side="right", padx=10, pady=10, ipadx=10, ipady=10)
 
-    #pause button
-    pause_button = tk.Button(nav_frame, text="Pause", command=pause_dispatch)
-    pause_button.pack(side="right", padx=10, pady=10, ipadx=10, ipady=10)
+
 
     #disable pause button at start
-    pause_button.config(state="disabled")
+    #action_button.config(state="disabled")
     
 
     # label for live time of dispatcher
-    live_time_label = tk.Label(nav_frame, text=f"Dispatcher Time: {dispatcher.live_time.strftime('%I:%M%p')}", anchor="center", justify="center", font=("Arial", 16))
+    live_time_label = tk.Label(nav_frame, text=f"{dispatcher.live_time.strftime('%I:%M%p')}", anchor="center", justify="center", font=("Arial", 30))
     live_time_label.pack(side="top", fill="x", expand=True)
 
     # Create frames for each truck
@@ -160,8 +140,7 @@ def init_gui(dispatcher):
         #miles round to one decimal place
         miles = round(truck.miles, 1);
 
-        #global status_label
-
+        #create status label
         truck_info = f"Truck: {truck.truck_id}\nMiles: {miles}\nDriver: {driver_text} \nLocation: {truck_location}\nLast Reported: {truck.time.strftime('%I:%M%p')}"
         status_label = tk.Label(status_frame, text=truck_info, bg="white", anchor="w", justify="left")
         status_label.pack(side="left", fill="x", expand=True)
@@ -172,7 +151,6 @@ def init_gui(dispatcher):
         if len(truck.queued_package_ids) == 0 and len(truck.delayed_package_ids) == 0 and truck.current_loc_index == 0:
             status_label.config(bg="#CCFFCC") #color light green if done
 
-        global list_names, frames, listboxes #for update_gui function
 
         # Packages list sections
         list_names = ['Queued', 'Delivered', 'Delayed']  # List to store the names of the lists
@@ -257,25 +235,13 @@ def init_gui(dispatcher):
             listboxes.append(listbox)
 
 def update_gui():
-    global status_labels
-    global live_time_label
-    global list_box_list
-    global nav_button
-    global pause_button
-    global speed_button
-    global step_button
+    global status_labels, live_time_label, list_box_list, action_button, speed_button, step_button
     
     #update the live time label
-    live_time_label.config(text=f"Dispatcher Time: {dispatcher.live_time.strftime('%I:%M%p')}")
-
+    live_time_label.config(text=f"{dispatcher.live_time.strftime('%I:%M%p')}")
+    
     #nav button update
     if dispatcher.is_dispatch_complete():
-        nav_button.config(state="disabled")
-        #change text to complete
-        nav_button.config(text="Dispatch Complete")
-
-        #disable pause button
-        pause_button.config(state="disabled")
 
         #disable step button
         step_button.config(state="disabled")
@@ -294,7 +260,7 @@ def update_gui():
         if truck.current_loc_index == 0:
             truck_location = "HUB"
         miles = round(truck.miles, 1);
-        truck_info = f"Truck: {truck.truck_id}\nMiles: {miles}\nDriver: {driver_text} \nLast Location: {truck_location}\nLast Reported: {truck.time.strftime('%I:%M%p')}\nStatus: {truck.status}"
+        truck_info = f"Truck: {truck.truck_id}\nMiles: {miles}\nDriver: {driver_text} \nLast Reported Location: {truck_location}\nLast Reported Time: {truck.time.strftime('%I:%M%p')}\nStatus: {truck.status}"
         status_labels[i].config(text=truck_info)
 
         #if truck has no more queued packages, and no more delayed packages, and is at the hub, then it is done
@@ -346,8 +312,8 @@ def update_gui():
                         if package.delayed_address is not None:
                             delayed_reason = " (wrong address)"
                         else:
-                            delayed_reason = " (delayed: arriving to hub: " + package.delayed_arrival_time.strftime('%I:%M%p') + ")"
-                        package_info += f" | {distance_from_current_location} miles away {delayed_reason}"
+                            delayed_reason = " Delayed: arriving to the hub at " + package.delayed_arrival_time.strftime('%I:%M%p')
+                        package_info += f" | {delayed_reason}"
 
 
                         listbox.insert("end", package_info)
@@ -367,7 +333,7 @@ def update_gui():
 
 # Main application window
 root = tk.Tk()
-root.title("Truck and Package Management")
+root.title("WGU C950 Package Delivery")
 
 #make screen as large as possible
 root.state('zoomed')
