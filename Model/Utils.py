@@ -4,7 +4,7 @@ from Model.Package import Package
 from Model.Dispatcher import Dispatcher
 from Model.Truck import Truck
 
-#load package data
+#load package data into dispatcher
 def load_package_data(dispatcher): #FIX ME: packages should be stored in a hashmap of package_id -> package
     # Open the CSV file
     with open('./Data/packages.csv', 'r') as csvfile:
@@ -33,7 +33,7 @@ def load_package_data(dispatcher): #FIX ME: packages should be stored in a hashm
 
 
 
-#load distance matrix
+#loads distance matrix to dispatcher
 def load_distance_matrix(dispatcher):
     with open('./Data/distances.csv', 'r') as csvfile:
         # Create a CSV reader object
@@ -63,7 +63,6 @@ def load_distance_matrix(dispatcher):
             csv_data.append(distances)
             row_index += 1
 
-        # Convert csv_data to distance_matrix, from string to float
         for i in range(len(csv_data)):
             distances = []
             for j in range(len(csv_data[i])):

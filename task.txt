@@ -1,0 +1,62 @@
+<USE sample-writing.txt as a template for the writing portion of the project.>
+
+A.  Identify a named self-adjusting algorithm (e.g., nearest neighbor algorithm, greedy algorithm) that could be used to create your program to deliver the packages.
+
+    The self-adjusting algorithm that will assist in the delivery of packages for WGUPS is the nearest neighbor algorithm. 
+    The algorithm is used to systematically deliver the next queued package based on the next closest package, until there are no more to be delivered, 
+    resulting in an optimal route for each delivery haul for each truck.
+
+B.  Identify a self-adjusting data structure, such as a hash table, that could be used with the algorithm identified in part A to store the package data.
+    
+1.  Explain how your data structure accounts for the relationship between the data components you are storing.
+
+    A Hash Table is used as a self-adjusting data structure to insert and access package information used during delivery. 
+    By using a hash table, the package information can be accessed in constant time, which will benefit the algorithm when determining the next 
+    closest package to deliver in real time. The hash table also uses buckets and handles table resizing, to ensure that collisions are minimized, 
+    making the hash table more efficient, and adaptable to a growing number of packages.
+
+
+C.  Write an overview of your program in which you do the following:
+
+1.  Explain the algorithm’s logic using pseudocode.
+
+    The delivery of packages for each truck works in the following way:
+
+    1. de-queue any packages that are not ready to be delivered yet. Includes packages that have not arrived at the hub yet,
+    and packages that have a wrong address and need to be corrected.
+    2. re-queue any packages that are ready to be delivered that have been set aside. This includes packages that have been corrected, and packages that have arrived at the hub.
+    3. get the closest package to the hub, and deliver it, update the time, and mark the package as delivered.
+    4. repeat step 3 until there are no more packages to delivered in the queue.
+    5. go back to the hub, update the time.
+
+    
+
+
+Note: You may refer to the attached “Sample Core Algorithm Overview” to complete part C1.
+
+
+2.  Describe the programming environment you will use to create the Python application, including both the software and hardware you will use.
+
+3.  Evaluate the space-time complexity of each major segment of the program and the entire program using big-O notation.
+
+4.  Explain the capability of your solution to scale and adapt to a growing number of packages.
+
+5.  Discuss why the software design would be efficient and easy to maintain.
+
+6.  Describe both the strengths and weaknesses of the self-adjusting data structure (e.g., the hash table).
+
+7.  Justify the choice of a key for efficient delivery management from the following components:
+
+•   delivery address
+
+•   delivery deadline
+
+•   delivery city
+
+•   delivery zip code
+
+•   package ID
+
+•   package weight
+
+•   delivery status (i.e., at the hub, en route, or delivered), including the delivery time

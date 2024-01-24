@@ -45,12 +45,12 @@ class Truck:
             time_to_travel = distance / self.speed * 60
 
             #this is to prevent the truck from moving faster than the live time
-            theoretical_delivery_time = self.time + timedelta(minutes=(distance / self.speed * 60))
-            if theoretical_delivery_time >= self.dispatcher.live_time:
+            delivery_eta = self.time + timedelta(minutes=(distance / self.speed * 60))
+            if delivery_eta >= self.dispatcher.live_time:
                 print("Truck #" + str(self.truck_id) + " is waiting for live time to catch up to theoretical delivery time\n")
 
                 #update truck status
-                self.status = f"On the way to HUB (ETA: {theoretical_delivery_time.strftime('%I:%M %p')})"
+                self.status = f"On the way to HUB (ETA: {delivery_eta.strftime('%I:%M %p')})"
 
                 return
 
@@ -60,14 +60,6 @@ class Truck:
             self.dispatcher.current_time = self.time
             self.status = "At Hub"
             
-
-    #gets the next available truck that has packages to deliver (if any)
-    def get_available_truck(self):
-        for truck in self.dispatcher.trucks:
-            if truck.driver_index is None and len(truck.queued_package_ids) > 0 and truck.get_id() != self.truck_id:
-                return truck
-            
-        return None
     
     #requeues delayed packages that are ready to be delivered
     def re_queue_delayed_packages(self):
@@ -153,100 +145,66 @@ class Truck:
     def truck_step(self):
         print("Truck #" + str(self.truck_id) + " Step------------------------------------\n")
 
-        self.de_queue_delayed_packages()
-
-        #requeue delayed packages that are ready to be delivered
-        self.re_queue_delayed_packages()
-
-        #if truck has driver 
-        if self.driver_index is not None:
-
-            #if there are no more packagaes to deliver in the queue
-            if len(self.queued_package_ids) == 0: 
-                print("No packages to deliver for truck #" + str(self.truck_id) + "\n")
-                
-                available_truck = self.get_available_truck()
-
-                #if not at hub, go back home
-                if self.current_loc_index != 0:
-                    self.go_back_to_hub(); #temp comment: not used by truck 2
-                    
-                    if available_truck != None:
-                        #update the time on the available truck to the current time of this truck
-                        available_truck.time = self.time
-                    
-                    return
-                
-                
-                if available_truck is not None:
-                    #print("Truck #" + str(available_truck.get_id()) + " is ready for transit, assigning driver: " + str(self.driver_index + 1))
-                    print(f"Assigning Driver: {self.driver_index + 1} to Truck #{available_truck.get_id()}\n")
-
-                    #assign new truck to driver
-                    self.dispatcher.drivers[self.driver_index].truck = available_truck
-                    
-                    #assign driver of this truck to the truck with no driver
-                    self.dispatcher.drivers[self.driver_index].truck.driver_index = self.driver_index
-                    
-                    #remove driver from this truck
-                    self.driver_index = None
-
-                    #update the time of the new truck to the current time of this truck
-                    available_truck.time = self.time
-                    available_truck.dispatcher.current_time = self.time
-                    
-                    return
-
-                return
-
-            #find closest package
-            min_distance = 9999; #init min distance to a high number
-            closest_package = None
-
-            #find closest package
-            for package_id in self.queued_package_ids:
-                package = self.dispatcher.package_table.get(package_id)
-
-                #calculate distance from current location to package address
-                distance = self.dispatcher.distance_matrix[self.current_loc_index][package.dist_matrix_index]
-
-                #if the distance found in the distance matrix is less than the current min distance, update the min distance and 
-                #the closest package
-                if  distance < min_distance:
-                    min_distance = self.dispatcher.distance_matrix[self.current_loc_index][package.dist_matrix_index]
-                    closest_package = package
-
-            #move truck to closest package, only move if the live time is less than or equal to the package calculated delivery time
-            theoretical_delivery_time = self.time + timedelta(minutes=(min_distance / self.speed * 60))
-
-            #this is to prevent the truck from moving faster than the live time 
-            if theoretical_delivery_time >= self.dispatcher.live_time:
-
-                #update truck status
-                eta = theoretical_delivery_time.strftime("%I:%M %p")
-                self.status = f"On the way to " + str(closest_package.get_address()) + " (ETA: " + eta + ") "
-
-                print("Truck #" + str(self.truck_id) + " is " + self.status + "\n")
-
-                return
+        #if there are no more packagaes to deliver in the queue
+        if len(self.queued_package_ids) == 0: 
+            print("No packages to deliver for truck #" + str(self.truck_id) + "\n")
             
 
-            print(f"Moving to Next Location: {closest_package.get_address()} (Package ID: {closest_package.get_id()}) : {min_distance} miles away\n")
+            #if not at hub, go back to hub
+            if self.current_loc_index != 0:
+                self.go_back_to_hub(); #temp comment: not used by truck 2
+                return 
 
-            time_to_travel = min_distance / self.speed * 60 #calculate time to travel to closest package
-            self.time += timedelta(minutes=time_to_travel) #update truck time
-            self.dispatcher.current_time = self.time
-            self.dispatcher.delivered_package_ids.append(closest_package.get_id()) #push package to delivered packages from the dispatcher
-            self.delivered_package_ids.append(closest_package.get_id())
-            closest_package.set_status("Delivered") #update package delivery status
-            self.last_package_delivered = closest_package.get_id() #update last package delivered
-            self.miles += min_distance #update truck miles
-            self.current_loc_index = closest_package.dist_matrix_index #update truck location index
-            closest_package.set_delivery_time(self.time) #update package delivery time
-            self.queued_package_ids.remove(closest_package.get_id()) #pop closest package off the truck queue
+            return
 
-            #step again, if there are more packages to deliver at the same time
-            self.truck_step()
+        #find closest package
+        min_distance = 9999; #init min distance to a high number
+        closest_package = None
+
+        #find closest package
+        for package_id in self.queued_package_ids:
+            package = self.dispatcher.package_table.get(package_id)
+
+            #calculate distance from current location to package address
+            distance = self.dispatcher.distance_matrix[self.current_loc_index][package.dist_matrix_index]
+
+            #if the distance found in the distance matrix is less than the current min distance, update the min distance and 
+            #the closest package
+            if  distance < min_distance:
+                min_distance = self.dispatcher.distance_matrix[self.current_loc_index][package.dist_matrix_index]
+                closest_package = package
+
+
+        delivery_eta = self.time + timedelta(minutes=(min_distance / self.speed * 60))
+
+        #this is to prevent the truck from moving faster than the live time 
+        if delivery_eta >= self.dispatcher.live_time:
+
+            #update truck status
+            eta = delivery_eta.strftime("%I:%M %p")
+            self.status = f"On the way to " + str(closest_package.get_address()) + " (ETA: " + eta + ") "
+
+            print("Truck #" + str(self.truck_id) + " is " + self.status + "\n")
+
+            return
+        
+
+        print(f"Moving to Next Location: {closest_package.get_address()} (Package ID: {closest_package.get_id()}) : {min_distance} miles away\n")
+
+        time_to_travel = min_distance / self.speed * 60 #calculate time to travel to closest package
+        self.time += timedelta(minutes=time_to_travel) #update truck time
+        self.dispatcher.current_time = self.time
+        self.dispatcher.delivered_package_ids.append(closest_package.get_id()) #push package to delivered packages from the dispatcher
+        self.delivered_package_ids.append(closest_package.get_id())
+        closest_package.set_status("Delivered") #update package delivery status
+        self.last_package_delivered = closest_package.get_id() #update last package delivered
+        self.miles += min_distance #update truck miles
+        self.current_loc_index = closest_package.dist_matrix_index #update truck location index
+        closest_package.set_delivery_time(self.time) #update package delivery time
+        self.queued_package_ids.remove(closest_package.get_id()) #pop closest package off the truck queue
+
+        #step again, if there are more packages to deliver at the same time
+        self.truck_step()
             
 
         

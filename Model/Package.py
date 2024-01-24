@@ -14,7 +14,7 @@ class Package:
         self.delivered_time = None #time that package was delivered
         self.status = "At Hub"
 
-        self.dispatcher = dispatcher #dispatcher object (parent)
+        self.dispatcher = dispatcher #dispatcher object 
 
         self.set_matrix_index() #index of the location in the distance matrix (used for calculating distance traveled)
 

@@ -11,7 +11,7 @@ global status_labels
 
 pause = True
 step_speed_index = 0
-step_speeds = [2000, 1000, 500, 100]
+step_speeds = [2000, 1000, 500, 100, 50]
 
 # Create dispatcher object for managing trucks and packages
 dispatcher = Dispatcher()
@@ -20,9 +20,7 @@ dispatcher = Dispatcher()
 load_distance_matrix(dispatcher)
 load_package_data(dispatcher)
 
-#for every truck in the dispatcher, truck.de_queue_delayed_packages();
-for truck in dispatcher.trucks:
-    truck.de_queue_delayed_packages()
+dispatcher.de_queue_unready_packages()
 
 #handles simulation start and pause
 def action_play():
@@ -109,12 +107,6 @@ def init_gui(dispatcher):
 
     step_button = tk.Button(nav_frame, text="Step", command=manual_dispatch_step)
     step_button.pack(side="right", padx=10, pady=10, ipadx=10, ipady=10)
-
-
-
-    #disable pause button at start
-    #action_button.config(state="disabled")
-    
 
     # label for live time of dispatcher
     live_time_label = tk.Label(nav_frame, text=f"{dispatcher.live_time.strftime('%I:%M%p')}", anchor="center", justify="center", font=("Arial", 30))
