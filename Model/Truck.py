@@ -150,24 +150,9 @@ class Truck:
             package = self.dispatcher.package_table.get(package_id)
             package.update_delivery_status(status)
  
+    def get_closest_package(self):
 
-
-    #deliver packages
-    def truck_step(self):
-        #print("------------------------------------Truck #" + str(self.truck_id) + " Step\n")
-
-        #if there are no more packagaes to deliver in the queue
-        if len(self.queued_package_ids) == 0: 
-            #print("No packages to deliver for truck #" + str(self.truck_id) + "\n")
-            
-
-            #if not at hub, go back to hub
-            if self.current_loc_index != 0:
-                self.go_back_to_hub(); 
-
-            return
-
-        #find closest package
+                #find closest package
         min_distance = 9999; #init min distance to a high number
         closest_package = None
 
@@ -184,6 +169,37 @@ class Truck:
                 min_distance = self.dispatcher.distance_matrix[self.current_loc_index][package.dist_matrix_index]
                 closest_package = package
 
+        return closest_package
+    
+
+    def deliver_package(self, min_distance, closest_package):
+        time_to_travel = min_distance / self.speed * 60 #calculate time to travel to closest package
+        self.time += timedelta(minutes=time_to_travel) #update truck time
+        self.dispatcher.delivered_package_ids.append(closest_package.get_id()) #push package to delivered packages from the dispatcher
+        self.delivered_package_ids.append(closest_package.get_id())
+        self.last_package_delivered = closest_package.get_id() #update last package delivered
+        self.miles += min_distance #update truck miles
+        self.current_loc_index = closest_package.dist_matrix_index #update truck location index
+        self.queued_package_ids.remove(closest_package.get_id()) #pop closest package off the truck queue
+        closest_package.set_delivery_time(self.time) #update package delivery time
+        closest_package.set_status("Delivered") #update package delivery status
+
+
+    #deliver packages
+    def truck_step(self):
+
+        #if there are no more packagaes to deliver in the queue
+        if len(self.queued_package_ids) == 0: 
+
+            #if not at hub, go back to hub
+            if self.current_loc_index != 0:
+                self.go_back_to_hub(); 
+
+            return
+
+        closest_package = self.get_closest_package()
+
+        min_distance = self.dispatcher.distance_matrix[self.current_loc_index][closest_package.dist_matrix_index]
 
         minutes = min_distance / self.speed * 60
 
@@ -202,16 +218,7 @@ class Truck:
         
         print(f"({self.dispatcher.live_time.strftime('%I:%M%p')}) (Delivered) Truck #{self.truck_id} | Location: {closest_package.get_address()} (ID: {closest_package.get_id()}) | Distance Traveled: {min_distance} | Total Miles: {self.miles + min_distance}")
 
-        time_to_travel = min_distance / self.speed * 60 #calculate time to travel to closest package
-        self.time += timedelta(minutes=time_to_travel) #update truck time
-        self.dispatcher.delivered_package_ids.append(closest_package.get_id()) #push package to delivered packages from the dispatcher
-        self.delivered_package_ids.append(closest_package.get_id())
-        closest_package.set_status("Delivered") #update package delivery status
-        self.last_package_delivered = closest_package.get_id() #update last package delivered
-        self.miles += min_distance #update truck miles
-        self.current_loc_index = closest_package.dist_matrix_index #update truck location index
-        closest_package.set_delivery_time(self.time) #update package delivery time
-        self.queued_package_ids.remove(closest_package.get_id()) #pop closest package off the truck queue
+        self.deliver_package(min_distance, closest_package)
 
         #step again, if there are more packages to deliver at the same time
         self.truck_step()
