@@ -1,8 +1,6 @@
 
 '''
-The dispatcher is responsible for controlling the steps trucks take to deliver packages.
-Each step involves a truck moving from one unvisited location to another.  
-
+Dispatcher is in charge of managing the trucks and drivers that will be delivering the packages.
 '''
 from datetime import datetime, timedelta
 
@@ -10,17 +8,12 @@ from Model.Truck import Truck
 from Model.Driver import Driver 
 from Model.HashTable import HashTable
 
-
-
 class Dispatcher:
     loading_address = "4001 South 700 East,  Salt Lake City, UT 84107"
     loading_address_index = 0
 
     #live_time is the current time of the dispatcher, starting at 8:00 AM
     live_time = datetime.combine(datetime.today(), datetime.strptime("8:00 AM", "%I:%M %p").time())
-
-    #current time is 8:00 AM datetime.time(8, 0, 0)
-    current_time = datetime.combine(datetime.today(), datetime.strptime("8:00 AM", "%I:%M %p").time())
 
     package_table = HashTable(); #list of packages to be delivered #FIX ME: queued_packages should be a hashmap of package_id -> package
     delivered_package_ids = []
@@ -68,14 +61,14 @@ class Dispatcher:
                 #step the truck
                 truck.truck_step()
 
-                #if truck is at the hub and has no more packages to deliver, then the truck is done and can look for another truck to drive
+                #if truck is at the hub and has no more packages to deliver, then the truck is done and can look for another truck that needs a driver
                 if truck.current_loc_index == 0 and len(truck.queued_package_ids) == 0 and len(truck.delayed_package_ids) == 0:
                     
                     available_truck = self.get_next_available_truck(truck)
             
                     if available_truck is not None:
                         #print("Truck #" + str(available_truck.get_id()) + " is ready for transit, assigning driver: " + str(self.driver_index + 1))
-                        print(f"Assigning Driver: {truck.driver_index + 1} to Truck #{available_truck.get_id()}\n")
+                        print(f" ({self.live_time.strftime('%I:%M%p')}) Assigning Driver: {truck.driver_index + 1} to Truck #{available_truck.get_id()}")
 
                         #assign new truck to driver
                         self.drivers[truck.driver_index].truck = available_truck
@@ -88,7 +81,14 @@ class Dispatcher:
 
                         #update the time of the new truck to the current time of this truck
                         available_truck.time = truck.time
-                        self.current_time = truck.time
+
+                
+                
+                #change package status based on truck status
+                if "En Route to" in truck.status:
+                    truck.update_all_package_status("En Route")
+                else:
+                    truck.update_all_package_status("At Hub")
 
 
         #gets the next available truck that has packages to deliver (if any)

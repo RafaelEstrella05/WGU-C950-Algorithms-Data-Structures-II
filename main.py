@@ -86,7 +86,7 @@ def dispatch_step():
 def init_gui(dispatcher):
     global status_labels, live_time_label, list_box_list, action_button, packages_label_list, step_button, speed_button, list_names, frames, listboxes
     status_labels = []
-    list_box_list = [] #array of listboxes, one for each truck and each list
+    list_box_list = [] 
     packages_label_list = []
 
     # Clear the root window
@@ -186,7 +186,7 @@ def init_gui(dispatcher):
             for package_id in package_ids:
                 package = dispatcher.package_table.get(package_id)
                 if package:
-                    package_info = f"ID: {package.get_id()} | at {package.address}"
+                    package_info = f"({package.status}) ID: {package.get_id()} | at {package.address}"
                     if package.delivery_deadline != "EOD":
                         package_info += f" | Deadline: {package.delivery_deadline}"
                     
@@ -202,7 +202,7 @@ def init_gui(dispatcher):
                         if package.delayed_address is not None:
                             delayed_reason = " (wrong address)"
                         else:
-                            delayed_reason = " (delayed: arriving to hub: " + package.delayed_arrival_time.strftime('%I:%M%p') + ")"
+                            delayed_reason = " (Delayed: arriving to hub: " + package.delayed_arrival_time.strftime('%I:%M%p') + ")"
                         package_info += f" | {distance_from_current_location} miles away {delayed_reason}"
                         listbox.insert("end", package_info)
                         listbox.itemconfig("end", {'bg':'#FFCC99'})  # Color light orange if delayed
@@ -287,13 +287,13 @@ def update_gui():
                 package = dispatcher.package_table.get(package_id)
                 
                 if package:
-                    package_info = f"ID: {package.get_id()} | at {package.address}"
+                    package_info = f"({package.status}) ID: {package.get_id()} | at {package.address}"
                     if package.delivery_deadline != "EOD":
                         package_info += f" | Deadline: {package.delivery_deadline}"
                     
                     if j == 1: #if list is delivered
                         delivery_time = package.get_delivery_time().strftime('%I:%M%p')
-                        package_info += f" | Delivered: {delivery_time} "
+                        package_info += f" | @ {delivery_time} "
                         listbox.insert("end", package_info)
                         listbox.itemconfig("end", {'bg':'#CCFFCC'})  # Color light green if delivered on time
                     elif j == 2: #if list is delayed
