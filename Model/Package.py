@@ -92,7 +92,7 @@ class Package:
 
     def update_delivery_status(self, status):
         
-        self.delivery_status = status
+        self.status = status
 
     def get_matrix_index():
         pass

@@ -12,10 +12,12 @@ class Truck:
         self.miles = 0 #miles traveled
         self.last_package_delivered = None #package object 
         self.driver_index = driver_index #driver index from dispatch driver list (indicates which driver is assigned to this truck)
-        self.status = "At Hub" #status of the truck (At Hub, In Transit, etc.)
+        self.status = "At Hub" #status of the truck (At Hub, En Route, etc.)
         self.dispatcher = dispatcher
-        self.time = self.dispatcher.current_time
+        self.time = self.dispatcher.live_time
         self.current_loc_index = 0 #for distance matrix
+
+        print(f"({self.dispatcher.live_time.strftime('%I:%M%p')}) Truck #{self.truck_id} | Location: HUB | Total Miles: 0")
 
 
     def get_id(self):
@@ -29,7 +31,6 @@ class Truck:
             driver_text = "None"
         print("Truck ID:", self.truck_id, ", Driver:", driver_text, ", Truck Miles:", self.miles)
         print("Last Package Delivered:", self.dispatcher.package_table.get(self.last_package_delivered))
-        print("Dispatcher Time:", self.dispatcher.current_time)
         print("Last Delivered Time:", self.time)
         print("Current Location:", str(self.dispatcher.location_labels[self.current_loc_index]))
 
@@ -39,25 +40,25 @@ class Truck:
         
         #go back home first if not already, calculate time to travel and update truck time and current location
         if self.current_loc_index != self.dispatcher.loading_address_index:
-            #print "moving truck from <Current Location> to the hub : <Distance> miles away"
-            print("\nMoving truck from (" + str(self.dispatcher.location_labels[self.current_loc_index]) + ") to the HUB : " + str(self.dispatcher.distance_matrix[self.current_loc_index][0]) + " miles away\n")
             distance = self.dispatcher.distance_matrix[self.current_loc_index][0]
             time_to_travel = distance / self.speed * 60
 
             #this is to prevent the truck from moving faster than the live time
             delivery_eta = self.time + timedelta(minutes=(distance / self.speed * 60))
-            if delivery_eta >= self.dispatcher.live_time:
-                print("Truck #" + str(self.truck_id) + " is waiting for live time to catch up to theoretical delivery time\n")
+            if delivery_eta >= self.dispatcher.live_time + timedelta(minutes=1):
 
                 #update truck status
-                self.status = f"On the way to HUB (ETA: {delivery_eta.strftime('%I:%M %p')})"
+                self.status = f"En Route to HUB (ETA: {delivery_eta.strftime('%I:%M %p')})"
+
+                #print("Truck #" + str(self.truck_id) + " is " + self.status + "\n")
 
                 return
+            
+            print(f"({self.dispatcher.live_time.strftime('%I:%M%p')}) Truck #{self.truck_id} | Location: HUB | Distance Traveled: {distance} | Total Miles: {self.miles + distance}")
 
             self.time += timedelta(minutes=time_to_travel)
             self.current_loc_index = 0
             self.miles += distance
-            self.dispatcher.current_time = self.time
             self.status = "At Hub"
             
     
@@ -83,6 +84,10 @@ class Truck:
             if do_update:
 
                 if package.delayed_arrival_time is not None:
+
+                    #print "package has arrived at the hub, updating status to At Hub"
+                    print(f"({self.dispatcher.live_time.strftime('%I:%M %p')}) Truck #{self.truck_id} Package #{package.get_id()} has arrived at the hub")
+
                     #update status to At Hub
                     package.set_status("At Hub")
                 else:
@@ -91,8 +96,8 @@ class Truck:
                     if self.current_loc_index == 0:
                         package.set_status("At Hub")
                     else:
-                        print("Adding package " + str(package.get_id()) + " back to truck " + str(self.truck_id) + " queue with delayed address\n")
-                        package.set_status("In Transit") #update package delivery status    
+                        print(f"({self.dispatcher.live_time.strftime('%I:%M %p')}) Adding delayed package " + str(package.get_id()) + " back to truck #" + str(self.truck_id) + " queue")
+                        package.set_status("En Route") #update package delivery status    
                 
                 if package.delayed_address is not None:
                     #update the the package address to the delayed address
@@ -106,7 +111,7 @@ class Truck:
                 packages_to_requeue.append(package)
 
                 #report time to truck
-                self.time = self.dispatcher.current_time
+                self.time = self.dispatcher.live_time
 
         #remove packages from delayed packages
         for package in packages_to_requeue:
@@ -121,8 +126,8 @@ class Truck:
             package = self.dispatcher.package_table.get(package_id)
 
             if package.get_status() == "Delayed":
-                #if package has a delayed address, and is not ready to be sent, set it a side and continue to next package
-                if package.delayed_address is not None: #and package.get_status() != "In Transit":
+                #if package has a delayed address, and is not ready to be sent, set it a side and continue to nxt package
+                if package.delayed_address is not None: #and package.get_status() != "En Route":
                     #add the package to delayed address packages
                     self.delayed_package_ids.append(package_id)
                     
@@ -138,22 +143,27 @@ class Truck:
         for package_id in self.delayed_package_ids:
             if package_id in self.queued_package_ids:
                 self.queued_package_ids.remove(package_id)
+
+
+    def update_all_package_status(self, status):
+        for package_id in self.queued_package_ids:
+            package = self.dispatcher.package_table.get(package_id)
+            package.update_delivery_status(status)
  
 
 
     #deliver packages
     def truck_step(self):
-        print("Truck #" + str(self.truck_id) + " Step------------------------------------\n")
+        #print("------------------------------------Truck #" + str(self.truck_id) + " Step\n")
 
         #if there are no more packagaes to deliver in the queue
         if len(self.queued_package_ids) == 0: 
-            print("No packages to deliver for truck #" + str(self.truck_id) + "\n")
+            #print("No packages to deliver for truck #" + str(self.truck_id) + "\n")
             
 
             #if not at hub, go back to hub
             if self.current_loc_index != 0:
-                self.go_back_to_hub(); #temp comment: not used by truck 2
-                return 
+                self.go_back_to_hub(); 
 
             return
 
@@ -175,25 +185,25 @@ class Truck:
                 closest_package = package
 
 
-        delivery_eta = self.time + timedelta(minutes=(min_distance / self.speed * 60))
+        minutes = min_distance / self.speed * 60
+
+        delivery_eta = self.time + timedelta(minutes=(minutes))
 
         #this is to prevent the truck from moving faster than the live time 
-        if delivery_eta >= self.dispatcher.live_time:
+        if delivery_eta >= self.dispatcher.live_time + timedelta(minutes=1):
 
             #update truck status
             eta = delivery_eta.strftime("%I:%M %p")
-            self.status = f"On the way to " + str(closest_package.get_address()) + " (ETA: " + eta + ") "
+            self.status = f"En Route to " + str(closest_package.get_address()) + " (ETA: " + eta + ") "
 
-            print("Truck #" + str(self.truck_id) + " is " + self.status + "\n")
+            #print("Truck #" + str(self.truck_id) + " is " + self.status + "\n")
 
             return
         
-
-        print(f"Moving to Next Location: {closest_package.get_address()} (Package ID: {closest_package.get_id()}) : {min_distance} miles away\n")
+        print(f"({self.dispatcher.live_time.strftime('%I:%M%p')}) (Delivered) Truck #{self.truck_id} | Location: {closest_package.get_address()} (ID: {closest_package.get_id()}) | Distance Traveled: {min_distance} | Total Miles: {self.miles + min_distance}")
 
         time_to_travel = min_distance / self.speed * 60 #calculate time to travel to closest package
         self.time += timedelta(minutes=time_to_travel) #update truck time
-        self.dispatcher.current_time = self.time
         self.dispatcher.delivered_package_ids.append(closest_package.get_id()) #push package to delivered packages from the dispatcher
         self.delivered_package_ids.append(closest_package.get_id())
         closest_package.set_status("Delivered") #update package delivery status

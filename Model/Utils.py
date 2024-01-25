@@ -89,4 +89,4 @@ def load_distance_matrix(dispatcher):
         print("\n Distance Matrix:")
         
         for i in range(len(distance_matrix)):
-            print(distance_matrix[i])
+            print(distance_matrix[i], end="\n\n")
