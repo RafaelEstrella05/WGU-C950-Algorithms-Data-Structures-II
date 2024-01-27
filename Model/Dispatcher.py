@@ -59,7 +59,7 @@ class Dispatcher:
             if truck.driver_index is not None:
             
                 #step the truck
-                truck.truck_step()
+                truck.move_truck()
 
                 #if truck is at the hub and has no more packages to deliver, then the truck is done and can look for another truck that needs a driver
                 if truck.current_loc_index == 0 and len(truck.queued_package_ids) == 0 and len(truck.delayed_package_ids) == 0:

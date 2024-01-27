@@ -30,12 +30,13 @@ class Truck:
         else:
             driver_text = "None"
         print("Truck ID:", self.truck_id, ", Driver:", driver_text, ", Truck Miles:", self.miles)
+        print("Status:", self.status)
         print("Last Package Delivered:", self.dispatcher.package_table.get(self.last_package_delivered))
-        print("Last Delivered Time:", self.time)
+        print("Last Reported Time:", self.time)
         print("Current Location:", str(self.dispatcher.location_labels[self.current_loc_index]))
 
     #updates the status of the truck to be in the loading dock
-    def go_back_to_hub(self):
+    def return_to_hub(self):
 
         
         #go back home first if not already, calculate time to travel and update truck time and current location
@@ -150,7 +151,7 @@ class Truck:
             package = self.dispatcher.package_table.get(package_id)
             package.update_delivery_status(status)
  
-    def get_closest_package(self):
+    def get_nearest_package(self):
 
                 #find closest package
         min_distance = 9999; #init min distance to a high number
@@ -186,18 +187,18 @@ class Truck:
 
 
     #deliver packages
-    def truck_step(self):
+    def move_truck(self):
 
         #if there are no more packagaes to deliver in the queue
         if len(self.queued_package_ids) == 0: 
 
             #if not at hub, go back to hub
             if self.current_loc_index != 0:
-                self.go_back_to_hub(); 
+                self.return_to_hub(); 
 
             return
 
-        closest_package = self.get_closest_package()
+        closest_package = self.get_nearest_package()
 
         min_distance = self.dispatcher.distance_matrix[self.current_loc_index][closest_package.dist_matrix_index]
 
@@ -221,7 +222,7 @@ class Truck:
         self.deliver_package(min_distance, closest_package)
 
         #step again, if there are more packages to deliver at the same time
-        self.truck_step()
+        self.move_truck()
             
 
         

@@ -1,9 +1,12 @@
+from Model.Package import Package
+
 class HashTable:
     def __init__(self, size=57):
         self.size = size
         self.count = 0
         self.table = [[] for _ in range(size)]
-        self.A = 0.618033988749895  # Constant for multiplication method : reciprocal of golden ratio, used for avoiding collisions
+        # Constant for multiplication method : reciprocal of golden ratio = (sqrt(5) - 1) / 2), used for avoiding collisions 
+        self.A = 0.6180339887498949  
 
     def hash_function(self, key):
         hash_value = int(self.size * ((key * self.A) % 1)) #multiplication method
@@ -25,6 +28,10 @@ class HashTable:
                 self.insert(package)
 
     def insert(self, package):
+        #verify that package is a Package object
+        if not isinstance(package, Package):
+            print("ERROR: Item cannot be inserted into Hash Table: not a Package object")
+            return
         self.check_load_and_resize()
         
         hash_key = self.hash_function(package.get_id())
@@ -41,6 +48,11 @@ class HashTable:
         self.count += 1
 
     def get(self, package_id):
+        #verify that package_id is an int
+        if not isinstance(package_id, int):
+            print("ERROR: Item cannot be retrieved from Hash Table: argument not an int")
+            return None
+
         hash_key = self.hash_function(package_id)
         for package in self.table[hash_key]:
             if package.get_id() == package_id:
@@ -51,3 +63,5 @@ class HashTable:
         for index, bucket in enumerate(self.table):
             if bucket:
                 print(f"Bucket {index}: {[package.get_id() for package in bucket]}")
+
+

@@ -11,7 +11,7 @@ global status_labels
 
 pause = True
 step_speed_index = 0
-step_speeds = [2000, 1000, 500, 100, 50]
+step_speeds = [2000, 1000, 500, 100, 25]
 
 # Create dispatcher object for managing trucks and packages
 dispatcher = Dispatcher()
